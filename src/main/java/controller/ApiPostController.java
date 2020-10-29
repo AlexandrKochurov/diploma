@@ -36,8 +36,7 @@ public class ApiPostController {
     public ResponseEntity getPosts(
             @RequestParam(name = "limit", required = false) Integer limit
     ){
-        postServiceImpl.getPosts(limit);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postServiceImpl.getPosts(limit));
     }
 
     @GetMapping
@@ -50,8 +49,7 @@ public class ApiPostController {
             @RequestParam(name = "query", required = false) String query,
             @RequestParam(name = "limit", required = false) Integer limit
     ){
-        postServiceImpl.searchPosts(query, limit);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postServiceImpl.searchPosts(query, limit));
     }
 
     @GetMapping
@@ -61,8 +59,7 @@ public class ApiPostController {
             @ApiResponse(code = 500, message = "Посты не найдены")
     })
     public ResponseEntity postsByDate(@RequestBody Date date){
-        postServiceImpl.postsByDate(date);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postServiceImpl.postsByDate(date));
     }
 
     @GetMapping
@@ -74,8 +71,7 @@ public class ApiPostController {
     public ResponseEntity postsForModeration(
             @RequestParam(name = "limit", required = false) Integer limit
     ){
-        postServiceImpl.postsForModeration(limit);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postServiceImpl.postsForModeration(limit));
     }
 
     @GetMapping
@@ -88,8 +84,7 @@ public class ApiPostController {
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "id", required = false) Integer id
     ){
-        postServiceImpl.myPosts(limit, id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postServiceImpl.myPosts(limit, id));
     }
 
     @GetMapping
@@ -102,7 +97,7 @@ public class ApiPostController {
             @RequestParam(name = "id", required = false) Integer id
     ) throws Exception {
         postServiceImpl.postById(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postServiceImpl.postById(id));
     }
 
     @PostMapping
