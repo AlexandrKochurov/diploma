@@ -1,41 +1,36 @@
 package service;
 
 import model.Post;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import repositories.PostRepository;
+import model.Tag;
 
+import java.util.Date;
+import java.util.List;
 
-@Service
-public class PostService {
-    private final PostRepository postRepository;
+public interface PostService {
+    //Метод возвращающий все посты
+    public List<Post> getPosts(int limit);
 
-    @Autowired
-    public PostService(PostRepository postRepository){
-        this.postRepository = postRepository;
-    }
+    //Метод возвращающий список постов по запросу
+    public List<Post> searchPosts(String query, int limit);
 
-    public void addPost(Post post){
-        postRepository.save(post);
-    }
+    //Метод возвращающий список постов за указанную дату
+    public List<Post> postsByDate(Date date);
 
-    public Iterable<Post> getPosts(){
-        return postRepository.findAll();
-    }
+    //Метод возвращающий список постов на модерацию
+    public List<Post> postsForModeration(int limit);
 
-    public Post getPost(Integer id) throws Exception {
-        return postRepository.findById(id).orElseThrow(() -> new Exception("Post doesn't exist"));
-    }
+    //Метод возвращающий список моих постов
+    public List<Post> myPosts(int limit, int id);
 
-    public void updatePost(Post post) throws Exception{
-        postRepository.findById(post.getId()).orElseThrow(() -> new Exception("Post doesn't exist"));
-        postRepository.save(post);
-    }
+    //Метод возвращающий конкретный пост, по ID
+    public Post postById(int id) throws Exception;
 
-    public void removePost(Post post) throws Exception{
-        postRepository.findById(post.getId()).orElseThrow(() -> new Exception("Post doesn't exist"));
-        postRepository.delete(post);
-    }
+    //Метод добавления поста
+    public void addPost(Post post);
 
+    //Метод редактирования поста
+    public void editPost(int id, Post post) throws Exception;
 
+    //Метод удаления поста
+    public void deletePost(int id) throws Exception;
 }
