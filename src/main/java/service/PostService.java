@@ -1,7 +1,6 @@
 package service;
 
 import model.Post;
-import model.Tag;
 
 import java.util.Date;
 import java.util.List;

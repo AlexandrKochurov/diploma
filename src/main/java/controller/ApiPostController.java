@@ -31,7 +31,7 @@ public class ApiPostController {
     @ApiOperation(value = "Вывод списка постов", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно выведены"),
-            @ApiResponse(code = 500, message = "Посты не найдены")
+            @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity getPosts(
             @RequestParam(name = "limit", required = false) Integer limit
@@ -43,7 +43,7 @@ public class ApiPostController {
     @ApiOperation(value = "Вывод списка постов по запросу", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 500, message = "Посты не найдены")
+            @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity searchPosts(
             @RequestParam(name = "query", required = false) String query,
@@ -56,7 +56,7 @@ public class ApiPostController {
     @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 500, message = "Посты не найдены")
+            @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity postsByDate(@RequestBody Date date){
         return ResponseEntity.ok(postServiceImpl.postsByDate(date));
@@ -66,7 +66,7 @@ public class ApiPostController {
     @ApiOperation(value = "Список постов на модерацию", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 500, message = "Посты не найдены")
+            @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity postsForModeration(
             @RequestParam(name = "limit", required = false) Integer limit
@@ -78,7 +78,7 @@ public class ApiPostController {
     @ApiOperation(value = "Список моих постов", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 500, message = "Посты не найдены")
+            @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity myPosts(
             @RequestParam(name = "limit", required = false) Integer limit,
@@ -91,7 +91,7 @@ public class ApiPostController {
     @ApiOperation(value = "Вывод поста по id", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Пост успешно найден"),
-            @ApiResponse(code = 500, message = "Пост не найден")
+            @ApiResponse(code = 404, message = "Пост не найден")
     })
     public ResponseEntity postById(
             @RequestParam(name = "id", required = false) Integer id
@@ -104,7 +104,7 @@ public class ApiPostController {
     @ApiOperation(value = "Добавление поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно добавлен"),
-            @ApiResponse(code = 500, message = "Пост не найден")
+            @ApiResponse(code = 404, message = "Пост не найден")
     })
     public ResponseEntity addPost(@RequestBody PostDTO postDTO){
         Post post = ConverterPostDTO.convertDtoToModel(postDTO);
@@ -116,7 +116,7 @@ public class ApiPostController {
     @ApiOperation(value = "Изменение поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно изменен"),
-            @ApiResponse(code = 500, message = "Пост не найден")
+            @ApiResponse(code = 404, message = "Пост не найден")
     })
     public ResponseEntity editPost(
             @RequestBody PostDTO postDTO,
@@ -131,7 +131,7 @@ public class ApiPostController {
     @ApiOperation(value = "Удаление поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно удален"),
-            @ApiResponse(code = 500, message = "Пост не найден")
+            @ApiResponse(code = 404, message = "Пост не найден")
     })
     public ResponseEntity deletePost(
             @RequestParam(name = "id", required = false) Integer id
