@@ -27,7 +27,7 @@ public class ApiPostController {
         this.postServiceImpl = postServiceImpl;
     }
 
-    @GetMapping
+    @GetMapping(value = "/")
     @ApiOperation(value = "Вывод списка постов", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно выведены"),
@@ -39,7 +39,7 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.getPosts(limit));
     }
 
-    @GetMapping
+    @GetMapping(value = "/search/")
     @ApiOperation(value = "Вывод списка постов по запросу", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
@@ -52,7 +52,7 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.searchPosts(query, limit));
     }
 
-    @GetMapping
+    @GetMapping(value = "/byDate/")
     @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
@@ -62,7 +62,7 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.postsByDate(date));
     }
 
-    @GetMapping
+    @GetMapping(value = "/moderation/")
     @ApiOperation(value = "Список постов на модерацию", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
@@ -74,7 +74,7 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.postsForModeration(limit));
     }
 
-    @GetMapping
+    @GetMapping(value = "/my/")
     @ApiOperation(value = "Список моих постов", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
@@ -87,7 +87,7 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.myPosts(limit, id));
     }
 
-    @GetMapping
+    @GetMapping(value = "/{ID}/")
     @ApiOperation(value = "Вывод поста по id", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Пост успешно найден"),
@@ -100,7 +100,7 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.postById(id));
     }
 
-    @PostMapping
+    @PostMapping(value = "/")
     @ApiOperation(value = "Добавление поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно добавлен"),
@@ -112,7 +112,7 @@ public class ApiPostController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping
+    @PutMapping(value = "/{ID}/")
     @ApiOperation(value = "Изменение поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно изменен"),
@@ -127,7 +127,7 @@ public class ApiPostController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping
+    @PostMapping(value = "/")
     @ApiOperation(value = "Удаление поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно удален"),
