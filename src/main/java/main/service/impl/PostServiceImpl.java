@@ -81,7 +81,7 @@ public class PostServiceImpl implements PostService {
         Iterable<Post> postIterable = postRepository.findAll();
         for(Post post: postIterable){
             if(limit == 0) break;
-            if(post.getUserId() == id){
+            if(post.getUserId().getId() == id){
                 posts.add(post);
             }
         }

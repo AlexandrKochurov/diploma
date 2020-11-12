@@ -3,6 +3,7 @@ package main.dto;
 import lombok.Builder;
 import lombok.Data;
 import main.model.ModerationStatus;
+import main.model.User;
 
 import java.util.Date;
 
@@ -15,9 +16,9 @@ public class PostDTO {
 
     private ModerationStatus modStatus;
 
-    private int moderatorId;
+    private User moderatorId;
 
-    private int userId;
+    private User userId;
 
     private Date time;
 
