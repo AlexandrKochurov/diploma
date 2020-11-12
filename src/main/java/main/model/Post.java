@@ -20,6 +20,9 @@ public class Post {
     @OneToMany(mappedBy = "postId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostComments> postCommentsList;
 
+//    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    private List<PostComments> postCommentsList;
+
     @OneToMany(mappedBy = "parentId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostComments> parentComments;
 
