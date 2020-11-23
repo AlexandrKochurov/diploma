@@ -22,16 +22,16 @@ public class PostComments {
     private int id;
 
     //ID комментария на который оставлен комментарий, может быть NULL(если коммент к посту) INT
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private PostComments parentId;
 
     //ID поста к которому написан комментарий INT NOT_NULL
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post postId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User userId;
 
@@ -42,8 +42,4 @@ public class PostComments {
     //Текст комментария TEXT NOT_NULL
     @Column(nullable = false)
     private String text;
-
-//    @ManyToOne(cascade = CascadeType.ALL)
-//    @JoinColumn(name = "post", nullable = false)
-//    private Post post;
 }
