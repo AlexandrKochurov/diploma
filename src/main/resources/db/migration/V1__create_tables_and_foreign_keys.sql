@@ -37,7 +37,7 @@ create table posts(
     moderator_status varchar(255),
     moderator_id integer,
     text varchar(255) not null,
-    time datetime(6) not null,
+    instant datetime(6) not null,
     title varchar(255) not null,
     user_id integer not null,
     view_count integer not null,

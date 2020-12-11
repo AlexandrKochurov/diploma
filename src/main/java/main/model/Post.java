@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -29,6 +29,8 @@ public class Post {
                 inverseJoinColumns = {@JoinColumn(name = "tag_id")})
     private List<Tag> tagList;
 
+    @OneToMany(mappedBy = "postId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PostVote> postVoteList;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -56,7 +58,7 @@ public class Post {
 
     //Дата и время публикации поста DATETIME NOT_NULL
     @Column(nullable = false)
-    private Date time;
+    private Instant instant;
 
     //Заголовок поста VARCHAR NOT_NULL
     @Column(nullable = false)

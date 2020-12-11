@@ -1,6 +1,5 @@
 package main.controller;
 
-import main.dto.PostDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -9,10 +8,8 @@ import main.model.Post;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import main.service.ConverterPostDTO;
 import main.service.impl.PostServiceImpl;
 
-import java.util.Date;
 
 
 @RestController
@@ -27,16 +24,18 @@ public class ApiPostController {
         this.postServiceImpl = postServiceImpl;
     }
 
-    @GetMapping(value = "/")
+    @GetMapping(value = "")
     @ApiOperation(value = "Вывод списка постов", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Посты успешно выведены"),
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity getPosts(
-            @RequestParam(name = "limit", required = false) Integer limit
+            @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
+            @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(name = "mode", required = false, defaultValue = "recent") String mode
     ){
-        return ResponseEntity.ok(postServiceImpl.getPosts(limit));
+        return ResponseEntity.ok(postServiceImpl.getAllPostsByMode(limit, offset, mode));
     }
 
     @GetMapping(value = "/search/")
@@ -46,10 +45,11 @@ public class ApiPostController {
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity searchPosts(
-            @RequestParam(name = "query", required = false) String query,
-            @RequestParam(name = "limit", required = false) Integer limit
+            @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
+            @RequestParam(name = "query", required = false) String query
     ){
-        return ResponseEntity.ok(postServiceImpl.searchPosts(query, limit));
+        return ResponseEntity.ok(postServiceImpl.searchPosts(offset, limit, query));
     }
 
     @GetMapping(value = "/byDate/")
@@ -58,8 +58,12 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
-    public ResponseEntity postsByDate(@RequestBody Date date){
-        return ResponseEntity.ok(postServiceImpl.postsByDate(date));
+    public ResponseEntity postsByDate(
+            @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
+            @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(name = "mode", required = false) String date
+    ){
+        return ResponseEntity.ok(postServiceImpl.postsByDate(offset, limit, date));
     }
 
     @GetMapping(value = "/moderation/")
@@ -69,9 +73,11 @@ public class ApiPostController {
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity postsForModeration(
-            @RequestParam(name = "limit", required = false) Integer limit
+            @RequestParam(name = "offset", required = false) int offset,
+            @RequestParam(name = "limit", required = false) int limit,
+            @RequestParam(name = "status", required = false) String status
     ){
-        return ResponseEntity.ok(postServiceImpl.postsForModeration(limit));
+        return ResponseEntity.ok(postServiceImpl.postsForModeration(offset, limit, status));
     }
 
     @GetMapping(value = "/my/")
@@ -81,10 +87,13 @@ public class ApiPostController {
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
     public ResponseEntity myPosts(
-            @RequestParam(name = "limit", required = false) Integer limit,
-            @RequestParam(name = "id", required = false) Integer id
+            @RequestParam(name = "offset", required = false) int offset,
+            @RequestParam(name = "limit", required = false) int limit,
+            @RequestParam(name = "id", required = false) int id,
+            @RequestParam(name = "active", required = false) int active,
+            @RequestParam(name = "status", required = false) String status
     ){
-        return ResponseEntity.ok(postServiceImpl.myPosts(limit, id));
+        return ResponseEntity.ok(postServiceImpl.myPosts(offset, limit, id, active, status));
     }
 
     @GetMapping(value = "/{ID}/")
@@ -94,20 +103,18 @@ public class ApiPostController {
             @ApiResponse(code = 404, message = "Пост не найден")
     })
     public ResponseEntity postById(
-            @RequestParam(name = "id", required = false) Integer id
-    ) throws Exception {
+            @RequestParam(name = "id", required = false) Integer id) {
         postServiceImpl.postById(id);
         return ResponseEntity.ok(postServiceImpl.postById(id));
     }
 
-    @PostMapping(value = "/")
+    @PostMapping(value = "")
     @ApiOperation(value = "Добавление поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно добавлен"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
-    public ResponseEntity addPost(@RequestBody PostDTO postDTO){
-        Post post = ConverterPostDTO.convertDtoToModel(postDTO);
+    public ResponseEntity addPost(@RequestBody Post post){
         postServiceImpl.addPost(post);
         return ResponseEntity.ok().build();
     }
@@ -119,10 +126,9 @@ public class ApiPostController {
             @ApiResponse(code = 404, message = "Пост не найден")
     })
     public ResponseEntity editPost(
-            @RequestBody PostDTO postDTO,
+            @RequestBody Post post,
             @RequestParam(name = "id", required = false) Integer id
     ) throws Exception {
-        Post post = ConverterPostDTO.convertDtoToModel(postDTO);
         postServiceImpl.editPost(id, post);
         return ResponseEntity.ok().build();
     }

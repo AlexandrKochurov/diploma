@@ -1,28 +1,30 @@
 package main.service;
 
+import main.dto.PostDTO;
 import main.model.Post;
-
-import java.util.Date;
 import java.util.List;
 
 public interface PostService {
     //Метод возвращающий все посты
-    List<Post> getPosts(int limit);
+    List<PostDTO> getAllPostsByMode(int limit, int offset, String mode);
 
     //Метод возвращающий список постов по запросу
-    List<Post> searchPosts(String query, int limit);
+    List<PostDTO> searchPosts(int offset, int limit, String query);
 
     //Метод возвращающий список постов за указанную дату
-    List<Post> postsByDate(Date date);
+    List<PostDTO> postsByDate(int offset, int limit, String date);
 
-    //Метод возвращающий список постов на модерацию
-    List<Post> postsForModeration(int limit);
+    //Список постов по тэгу
+    List<PostDTO> postsByTag(int offset, int limit, String tag);
 
-    //Метод возвращающий список моих постов
-    List<Post> myPosts(int limit, int id);
+    //Список постов на модерацию
+    List<PostDTO> postsForModeration(int offset, int limit, String status);
+
+    //Список моих постов
+    List<PostDTO> myPosts(int offset, int limit, int usetId, int active, String status);
 
     //Метод возвращающий конкретный пост, по ID
-    Post postById(int id) throws Exception;
+    PostDTO postById(int id) throws Exception;
 
     //Метод добавления поста
     void addPost(Post post);

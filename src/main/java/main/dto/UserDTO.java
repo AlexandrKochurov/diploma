@@ -1,27 +1,14 @@
 package main.dto;
 
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.Date;
 
 @Data
-@Builder
+@AllArgsConstructor
 public class UserDTO {
     private int id;
 
-    private byte isModerator;
-
-    private Date regTime;
-
     private String name;
-
-    private String eMail;
-
-    private String password;
-
-    private String code;
-
-    private String photo;
 }

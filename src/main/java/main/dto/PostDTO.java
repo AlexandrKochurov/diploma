@@ -1,30 +1,29 @@
 package main.dto;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import main.model.ModerationStatus;
-import main.model.User;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Data
-@Builder
+@AllArgsConstructor
 public class PostDTO {
     private int id;
 
-    private byte isActive;
-
-    private ModerationStatus modStatus;
-
-    private User moderatorId;
-
-    private User userId;
-
-    private Date time;
+    private Instant timestamp;
 
     private String title;
 
-    private String text;
+    private String announce;
+
+    private int likeCount;
+
+    private int dislikeCount;
+
+    private int commentCount;
 
     private int viewCount;
+
+    private UserDTO user;
+
 }

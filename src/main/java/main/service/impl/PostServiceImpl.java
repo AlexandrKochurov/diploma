@@ -1,20 +1,25 @@
 package main.service.impl;
 
+import main.dto.PostDTO;
+import main.dto.UserDTO;
 import main.model.ModerationStatus;
 import main.model.Post;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import main.repositories.PostRepository;
 import main.service.PostService;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 
 @Service
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
+    private final int ANNOUNCE_LENGTH = 33;
 
     @Autowired
     public PostServiceImpl(PostRepository postRepository){
@@ -22,75 +27,59 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<Post> getPosts(int limit) {
-        Iterable<Post> postIterable = postRepository.findAll();
-        ArrayList<Post> posts = new ArrayList<>();
-        for(Post post: postIterable){
-            if(limit == 0) break;
-            if(post.getIsActive() == 1 && post.getModStatus() == ModerationStatus.ACCEPTED && post.getTime().before(new Date())){
-                posts.add(post);
-                limit--;
-            }
+    public List<PostDTO> getAllPostsByMode(int limit, int offset, String mode) {
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        switch (mode) {
+            case "recent" : return getPostsDTO(postRepository.recentPosts(pageable));
+            case "popular": return getPostsDTO(postRepository.popularPosts(pageable));
+            case "best": return getPostsDTO(postRepository.bestPosts(pageable));
+            case "early": return getPostsDTO(postRepository.earlyPosts(pageable));
+            default: return null;
         }
-        return posts;
     }
 
     @Override
-    public List<Post> searchPosts(String query, int limit) {
-        ArrayList<Post> posts = new ArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for(Post post: postIterable){
-            if(limit == 0) break;
-            if(post.getText().contains(query)){
-                posts.add(post);
-                limit--;
-            }
-        }
-        return posts;
+    public List<PostDTO> searchPosts(int offset, int limit, String query) {
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        return getPostsDTO(postRepository.searchPosts(pageable, query));
     }
 
     @Override
-    public List<Post> postsByDate(Date date) {
-        ArrayList<Post> posts = new ArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for(Post post: postIterable){
-            if(post.getTime().compareTo(date) == 0){
-                posts.add(post);
-            }
-        }
-        return posts;
+    public List<PostDTO> postsByDate(int offset, int limit, String date) {
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        return getPostsDTO(postRepository.postsByDate(pageable, date));
     }
 
     @Override
-    public List<Post> postsForModeration(int limit) {
-        ArrayList<Post> posts = new ArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for(Post post: postIterable){
-            if(limit == 0) break;
-            if(post.getModStatus() == ModerationStatus.NEW){
-                posts.add(post);
-                limit--;
-            }
-        }
-        return posts;
+    public List<PostDTO> postsByTag(int offset, int limit, String tag) {
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        return getPostsDTO(postRepository.postsByTag(pageable, tag));
     }
 
     @Override
-    public List<Post> myPosts(int limit, int id) {
-        ArrayList<Post> posts = new ArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for(Post post: postIterable){
-            if(limit == 0) break;
-            if(post.getUserId().getId() == id){
-                posts.add(post);
-            }
-        }
-        return posts;
+    public List<PostDTO> postsForModeration(int offset, int limit, String status) {
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        return getPostsDTO(postRepository.postsForModeration(pageable, status));
     }
 
     @Override
-    public Post postById(int id) throws Exception {
-        return postRepository.findById(id).orElseThrow(() -> new Exception("Post doesn't exist"));
+    public List<PostDTO> myPosts(int offset, int limit, int userId, int active, String status) {
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        return getPostsDTO(postRepository.myPosts(pageable, userId, status, active));
+    }
+
+    @Override
+    public PostDTO postById(int id){
+        Post post = postRepository.findById(id).get();
+        return new PostDTO(post.getId(),
+                post.getInstant(),
+                post.getTitle(),
+                post.getText().substring(0, ANNOUNCE_LENGTH),
+                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
+                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
+                post.getPostVoteList().size(),
+                post.getViewCount(),
+                new UserDTO(post.getUserId().getId(), post.getUserId().getName()));
     }
 
     @Override
@@ -109,5 +98,22 @@ public class PostServiceImpl implements PostService {
     public void deletePost(int id) throws Exception {
         postRepository.findById(id).orElseThrow(() -> new Exception("Post doesn't exist"));
         postRepository.deleteById(id);
+    }
+
+    private List<PostDTO> getPostsDTO(List<Post> postList) {
+        return postList.stream()
+                .map(
+                        post ->
+                                new PostDTO(
+                                        post.getId(),
+                                        post.getInstant(),
+                                        post.getTitle(),
+                                        post.getText().substring(0, ANNOUNCE_LENGTH),
+                                        (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
+                                        (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
+                                        post.getPostVoteList().size(),
+                                        post.getViewCount(),
+                                        new UserDTO(post.getUserId().getId(), post.getUserId().getName())))
+                .collect(toList());
     }
 }
