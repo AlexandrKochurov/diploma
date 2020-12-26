@@ -4,6 +4,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import main.api.response.PostsListResponse;
+import main.dto.PostsDTO;
 import main.model.Post;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,12 +32,12 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Посты успешно выведены"),
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
-    public ResponseEntity getPosts(
-            @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
-            @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
+    public ResponseEntity<PostsListResponse> getPosts(
+            @RequestParam(name = "offset", required = false, defaultValue= "0") int offset,
+            @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "mode", required = false, defaultValue = "recent") String mode
     ){
-        return ResponseEntity.ok(postServiceImpl.getAllPostsByMode(limit, offset, mode));
+        return ResponseEntity.ok(postServiceImpl.getAllPostsByMode(offset, limit, mode));
     }
 
     @GetMapping(value = "/search/")
@@ -44,7 +46,7 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
-    public ResponseEntity searchPosts(
+    public ResponseEntity<PostsListResponse> searchPosts(
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "query", required = false) String query
@@ -58,12 +60,26 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
-    public ResponseEntity postsByDate(
+    public ResponseEntity<?> postsByDate(
             @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "mode", required = false) String date
     ){
         return ResponseEntity.ok(postServiceImpl.postsByDate(offset, limit, date));
+    }
+
+    @GetMapping(value = "/byTag/")
+    @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Посты успешно найдены"),
+            @ApiResponse(code = 404, message = "Посты не найдены")
+    })
+    public ResponseEntity<?> postsByTag(
+            @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
+            @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
+            @RequestParam(name = "mode", required = false) String tag
+    ){
+        return ResponseEntity.ok(postServiceImpl.postsByTag(offset, limit, tag));
     }
 
     @GetMapping(value = "/moderation/")
@@ -72,7 +88,7 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
-    public ResponseEntity postsForModeration(
+    public ResponseEntity<?> postsForModeration(
             @RequestParam(name = "offset", required = false) int offset,
             @RequestParam(name = "limit", required = false) int limit,
             @RequestParam(name = "status", required = false) String status
@@ -86,7 +102,7 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Посты успешно найдены"),
             @ApiResponse(code = 404, message = "Посты не найдены")
     })
-    public ResponseEntity myPosts(
+    public ResponseEntity<?> myPosts(
             @RequestParam(name = "offset", required = false) int offset,
             @RequestParam(name = "limit", required = false) int limit,
             @RequestParam(name = "id", required = false) int id,
@@ -96,14 +112,13 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.myPosts(offset, limit, id, active, status));
     }
 
-    @GetMapping(value = "/{ID}/")
+    @GetMapping(value = "/{id}/")
     @ApiOperation(value = "Вывод поста по id", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Пост успешно найден"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
-    public ResponseEntity postById(
-            @RequestParam(name = "id", required = false) Integer id) {
+    public ResponseEntity<PostsDTO> postById(@PathVariable int id) {
         postServiceImpl.postById(id);
         return ResponseEntity.ok(postServiceImpl.postById(id));
     }
@@ -114,18 +129,18 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Пост успешно добавлен"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
-    public ResponseEntity addPost(@RequestBody Post post){
+    public ResponseEntity<?> addPost(@RequestBody Post post){
         postServiceImpl.addPost(post);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping(value = "/{ID}/")
+    @PutMapping(value = "/{id}/")
     @ApiOperation(value = "Изменение поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно изменен"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
-    public ResponseEntity editPost(
+    public ResponseEntity<?> editPost(
             @RequestBody Post post,
             @RequestParam(name = "id", required = false) Integer id
     ) throws Exception {

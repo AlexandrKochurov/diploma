@@ -1,7 +1,9 @@
 package main.service.impl;
 
-import main.dto.PostDTO;
+import main.api.response.PostsListResponse;
+import main.dto.PostsDTO;
 import main.dto.UserDTO;
+import main.exceptions.NotFoundPostException;
 import main.model.ModerationStatus;
 import main.model.Post;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +21,7 @@ import static java.util.stream.Collectors.toList;
 @Service
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
-    private final int ANNOUNCE_LENGTH = 33;
+    private final int ANNOUNCE_LENGTH = 23;
 
     @Autowired
     public PostServiceImpl(PostRepository postRepository){
@@ -27,59 +29,52 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostDTO> getAllPostsByMode(int limit, int offset, String mode) {
+    public PostsListResponse getAllPostsByMode(int offset, int limit, String mode) {
         Pageable pageable = PageRequest.of(offset / limit, limit);
+        int quantity = postRepository.countAllPosts();
         switch (mode) {
-            case "recent" : return getPostsDTO(postRepository.recentPosts(pageable));
-            case "popular": return getPostsDTO(postRepository.popularPosts(pageable));
-            case "best": return getPostsDTO(postRepository.bestPosts(pageable));
-            case "early": return getPostsDTO(postRepository.earlyPosts(pageable));
-            default: return null;
+            case "recent" : return new PostsListResponse(quantity, getPostsDTO(postRepository.recentPosts(pageable)));
+            case "popular": return new PostsListResponse(quantity, getPostsDTO(postRepository.popularPosts(pageable)));
+            case "best": return new PostsListResponse(quantity, getPostsDTO(postRepository.bestPosts(pageable)));
+            case "early": return new PostsListResponse(quantity, getPostsDTO(postRepository.earlyPosts(pageable)));
+            default: throw new NotFoundPostException();
         }
     }
 
     @Override
-    public List<PostDTO> searchPosts(int offset, int limit, String query) {
+    public PostsListResponse searchPosts(int offset, int limit, String query) {
         Pageable pageable = PageRequest.of(offset / limit, limit);
-        return getPostsDTO(postRepository.searchPosts(pageable, query));
+        return new PostsListResponse(postRepository.countSearchPosts(query), getPostsDTO(postRepository.searchPosts(pageable, query)));
     }
 
     @Override
-    public List<PostDTO> postsByDate(int offset, int limit, String date) {
+    public PostsListResponse postsByDate(int offset, int limit, String date) {
         Pageable pageable = PageRequest.of(offset / limit, limit);
-        return getPostsDTO(postRepository.postsByDate(pageable, date));
+        return new PostsListResponse(postRepository.countPostsByDate(date), getPostsDTO(postRepository.postsByDate(pageable, date)));
     }
 
     @Override
-    public List<PostDTO> postsByTag(int offset, int limit, String tag) {
+    public PostsListResponse postsByTag(int offset, int limit, String tag) {
         Pageable pageable = PageRequest.of(offset / limit, limit);
-        return getPostsDTO(postRepository.postsByTag(pageable, tag));
+        return new PostsListResponse(postRepository.countPostsByTag(tag), getPostsDTO(postRepository.postsByTag(pageable, tag)));
     }
 
     @Override
-    public List<PostDTO> postsForModeration(int offset, int limit, String status) {
+    public PostsListResponse postsForModeration(int offset, int limit, String status) {
         Pageable pageable = PageRequest.of(offset / limit, limit);
-        return getPostsDTO(postRepository.postsForModeration(pageable, status));
+        return new PostsListResponse(postRepository.countPostsForModeration(status), getPostsDTO(postRepository.postsForModeration(pageable, status)));
     }
 
     @Override
-    public List<PostDTO> myPosts(int offset, int limit, int userId, int active, String status) {
+    public PostsListResponse myPosts(int offset, int limit, int userId, int active, String status) {
         Pageable pageable = PageRequest.of(offset / limit, limit);
-        return getPostsDTO(postRepository.myPosts(pageable, userId, status, active));
+        return new PostsListResponse(postRepository.countMyPosts(userId, status, active), getPostsDTO(postRepository.myPosts(pageable, userId, status, active)));
     }
 
     @Override
-    public PostDTO postById(int id){
-        Post post = postRepository.findById(id).get();
-        return new PostDTO(post.getId(),
-                post.getInstant(),
-                post.getTitle(),
-                post.getText().substring(0, ANNOUNCE_LENGTH),
-                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
-                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
-                post.getPostVoteList().size(),
-                post.getViewCount(),
-                new UserDTO(post.getUserId().getId(), post.getUserId().getName()));
+    public PostsDTO postById(int id){
+        Post post = postRepository.postById(id);
+        return PostsDTO.postById2PostDTO(post);
     }
 
     @Override
@@ -100,13 +95,13 @@ public class PostServiceImpl implements PostService {
         postRepository.deleteById(id);
     }
 
-    private List<PostDTO> getPostsDTO(List<Post> postList) {
+    private List<PostsDTO> getPostsDTO(List<Post> postList) {
         return postList.stream()
                 .map(
                         post ->
-                                new PostDTO(
+                                new PostsDTO(
                                         post.getId(),
-                                        post.getInstant(),
+                                        post.getInstant().getEpochSecond(),
                                         post.getTitle(),
                                         post.getText().substring(0, ANNOUNCE_LENGTH),
                                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
