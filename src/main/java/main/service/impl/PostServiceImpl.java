@@ -1,11 +1,16 @@
 package main.service.impl;
 
+import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
-import main.dto.PostsDTO;
+import main.dto.PostCommentsDTO;
+import main.dto.PostDTO;
 import main.dto.UserDTO;
-import main.exceptions.NotFoundPostException;
+import main.exceptions.NotFoundPostByIdException;
+import main.exceptions.NotFoundPostsException;
 import main.model.ModerationStatus;
 import main.model.Post;
+import main.model.PostComments;
+import main.model.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +19,7 @@ import main.repositories.PostRepository;
 import main.service.PostService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -21,6 +27,7 @@ import static java.util.stream.Collectors.toList;
 @Service
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
+
     private final int ANNOUNCE_LENGTH = 23;
 
     @Autowired
@@ -37,7 +44,7 @@ public class PostServiceImpl implements PostService {
             case "popular": return new PostsListResponse(quantity, getPostsDTO(postRepository.popularPosts(pageable)));
             case "best": return new PostsListResponse(quantity, getPostsDTO(postRepository.bestPosts(pageable)));
             case "early": return new PostsListResponse(quantity, getPostsDTO(postRepository.earlyPosts(pageable)));
-            default: throw new NotFoundPostException();
+            default: throw new NotFoundPostsException();
         }
     }
 
@@ -72,9 +79,26 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostsDTO postById(int id){
+    public PostByIdResponse postById(int id){
         Post post = postRepository.postById(id);
-        return PostsDTO.postById2PostDTO(post);
+        if(post == null) throw new NotFoundPostByIdException();
+        int viewCount = post.getViewCount();
+        post.setViewCount(viewCount + 1);
+        postRepository.save(post);
+        List<String> tags = post.getTagList().stream().filter(tag -> tag.getId() == post.getId()).map(Tag::getName).collect(Collectors.toList());
+        return new PostByIdResponse(
+                post.getId(),
+                post.getInstant().getEpochSecond(),
+                post.getIsActive() == 1,
+                new UserDTO(post.getUserId().getId(), post.getUserId().getName()),
+                post.getTitle(),
+                post.getText(),
+                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
+                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
+                viewCount,
+                getPostCommentsDTO(post.getPostCommentsList()),
+                tags
+                );
     }
 
     @Override
@@ -95,20 +119,35 @@ public class PostServiceImpl implements PostService {
         postRepository.deleteById(id);
     }
 
-    private List<PostsDTO> getPostsDTO(List<Post> postList) {
+    private List<PostDTO> getPostsDTO(List<Post> postList) {
         return postList.stream()
                 .map(
                         post ->
-                                new PostsDTO(
+                                new PostDTO(
                                         post.getId(),
                                         post.getInstant().getEpochSecond(),
                                         post.getTitle(),
-                                        post.getText().substring(0, ANNOUNCE_LENGTH),
+                                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)),
                                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
                                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
-                                        post.getPostVoteList().size(),
+                                        post.getPostCommentsList().size(),
                                         post.getViewCount(),
-                                        new UserDTO(post.getUserId().getId(), post.getUserId().getName())))
+                                        new UserDTO(post.getUserId().getId(), post.getUserId().getName())
+                                        ))
+                .collect(toList());
+    }
+
+    private List<PostCommentsDTO> getPostCommentsDTO(List<PostComments> postCommentsList){
+        return postCommentsList.stream()
+                .map(
+                        comment ->
+                                new PostCommentsDTO(
+                                        comment.getId(),
+                                        comment.getTime().getEpochSecond(),
+                                        comment.getText(),
+                                        new UserDTO(comment.getUserId().getId(), comment.getUserId().getName(), comment.getUserId().getPhoto())
+                                )
+                )
                 .collect(toList());
     }
 }

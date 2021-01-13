@@ -3,13 +3,10 @@ package main.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-
 @Data
 @AllArgsConstructor
-public class CalendarDTO {
-    private int year;
+public class TagDTO {
+    private String name;
 
-    private String date;
-
-    private int amount;
+    private double weight;
 }

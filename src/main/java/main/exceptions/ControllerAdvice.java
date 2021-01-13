@@ -9,8 +9,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @org.springframework.web.bind.annotation.ControllerAdvice
 public class ControllerAdvice {
 
-    @ExceptionHandler(NotFoundPostException.class)
-    ResponseEntity<ExceptionMessage> handleNotFoundException(){
+    @ExceptionHandler(NotFoundPostsException.class)
+    ResponseEntity<ExceptionMessage> handleNotFoundPostsException(){
+        return new ResponseEntity<>(new ExceptionMessage("There is no such posts"), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(NotFoundPostByIdException.class)
+    ResponseEntity<ExceptionMessage> handleNotFoundPostByIdException(){
         return new ResponseEntity<>(new ExceptionMessage("There is no such post"), HttpStatus.NOT_FOUND);
     }
 

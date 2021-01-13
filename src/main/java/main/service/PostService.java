@@ -1,7 +1,7 @@
 package main.service;
 
+import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
-import main.dto.PostsDTO;
 import main.model.Post;
 
 public interface PostService {
@@ -24,7 +24,7 @@ public interface PostService {
     PostsListResponse myPosts(int offset, int limit, int usetId, int active, String status);
 
     //Метод возвращающий конкретный пост, по ID
-    PostsDTO postById(int id) throws Exception;
+    PostByIdResponse postById(int id) throws Exception;
 
     //Метод добавления поста
     void addPost(Post post);

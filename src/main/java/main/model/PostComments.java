@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.Instant;
 
 @Entity
 @Data
@@ -37,7 +37,7 @@ public class PostComments {
 
     //Дата и время комментария DATETIME NOT_NULL
     @Column(nullable = false)
-    private Date time;
+    private Instant time;
 
     //Текст комментария TEXT NOT_NULL
     @Column(nullable = false)

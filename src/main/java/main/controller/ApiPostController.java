@@ -4,8 +4,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
-import main.dto.PostsDTO;
 import main.model.Post;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,10 +28,7 @@ public class ApiPostController {
 
     @GetMapping(value = "")
     @ApiOperation(value = "Вывод списка постов", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Посты успешно выведены"),
-            @ApiResponse(code = 404, message = "Посты не найдены")
-    })
+    @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<PostsListResponse> getPosts(
             @RequestParam(name = "offset", required = false, defaultValue= "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
@@ -40,12 +37,9 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.getAllPostsByMode(offset, limit, mode));
     }
 
-    @GetMapping(value = "/search/")
+    @GetMapping(value = "/search")
     @ApiOperation(value = "Вывод списка постов по запросу", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 404, message = "Посты не найдены")
-    })
+    @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<PostsListResponse> searchPosts(
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
@@ -54,13 +48,10 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.searchPosts(offset, limit, query));
     }
 
-    @GetMapping(value = "/byDate/")
+    @GetMapping(value = "/byDate")
     @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 404, message = "Посты не найдены")
-    })
-    public ResponseEntity<?> postsByDate(
+    @ApiResponse(code = 200, message = "Posts either found or not :)")
+    public ResponseEntity<PostsListResponse> postsByDate(
             @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "mode", required = false) String date
@@ -68,13 +59,10 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.postsByDate(offset, limit, date));
     }
 
-    @GetMapping(value = "/byTag/")
+    @GetMapping(value = "/byTag")
     @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 404, message = "Посты не найдены")
-    })
-    public ResponseEntity<?> postsByTag(
+    @ApiResponse(code = 200, message = "Posts either found or not :)")
+    public ResponseEntity<PostsListResponse> postsByTag(
             @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "mode", required = false) String tag
@@ -82,12 +70,9 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.postsByTag(offset, limit, tag));
     }
 
-    @GetMapping(value = "/moderation/")
+    @GetMapping(value = "/moderation")
     @ApiOperation(value = "Список постов на модерацию", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 404, message = "Посты не найдены")
-    })
+    @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<?> postsForModeration(
             @RequestParam(name = "offset", required = false) int offset,
             @RequestParam(name = "limit", required = false) int limit,
@@ -96,12 +81,9 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.postsForModeration(offset, limit, status));
     }
 
-    @GetMapping(value = "/my/")
+    @GetMapping(value = "/my")
     @ApiOperation(value = "Список моих постов", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Посты успешно найдены"),
-            @ApiResponse(code = 404, message = "Посты не найдены")
-    })
+    @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<?> myPosts(
             @RequestParam(name = "offset", required = false) int offset,
             @RequestParam(name = "limit", required = false) int limit,
@@ -112,14 +94,13 @@ public class ApiPostController {
         return ResponseEntity.ok(postServiceImpl.myPosts(offset, limit, id, active, status));
     }
 
-    @GetMapping(value = "/{id}/")
+    @GetMapping(value = "/{id}")
     @ApiOperation(value = "Вывод поста по id", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Пост успешно найден"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
-    public ResponseEntity<PostsDTO> postById(@PathVariable int id) {
-        postServiceImpl.postById(id);
+    public ResponseEntity<PostByIdResponse> postById(@PathVariable int id) {
         return ResponseEntity.ok(postServiceImpl.postById(id));
     }
 
@@ -134,7 +115,7 @@ public class ApiPostController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping(value = "/{id}/")
+    @PutMapping(value = "/{id}")
     @ApiOperation(value = "Изменение поста", response = ResponseEntity.class)
     @ApiResponses(value =  {
             @ApiResponse(code = 200, message = "Пост успешно изменен"),

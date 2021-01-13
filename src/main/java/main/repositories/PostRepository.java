@@ -1,7 +1,6 @@
 package main.repositories;
 
-import main.dto.CalendarDTO;
-import main.dto.PostsDTO;
+import main.dto.CalendarInterfaceProjection;
 import main.model.Post;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
 
 @Repository
 public interface PostRepository extends CrudRepository<Post, Integer> {
@@ -109,14 +107,13 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
             nativeQuery = true)
     List<Post> myPosts(Pageable pageable, @Param("user_id") int userId, @Param("status") String status, @Param("active") int active);
 
-    @Query(value = "select * from posts where id = :post_id and posts.moderator_status='ACCEPTED' and posts.is_active=1 and posts.instant<=now(); " +
-            "update posts set view_count = view_count + 1 where id = :post_id",
+    @Query(value = "select * from posts where id = :post_id and posts.moderator_status='ACCEPTED' and posts.is_active=1 and posts.instant<=now()",
             nativeQuery = true)
     Post postById(@Param("post_id") int postId);
 
-    @Query(value = "select year(posts.instant) as year, date_format(posts.instant, '%Y-%m-%d') as date, count(*) as amount from diplomaproject.posts \n" +
-            "where year(posts.instant)=2020 and posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() \n" +
+    @Query(value = "select year(posts.instant) as year, date_format(posts.instant, '%Y-%m-%d') as date, count(*) as amount from posts " +
+            "where year(posts.instant)= :year and posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() " +
             "group by year, date order by date",
             nativeQuery = true)
-    List<CalendarDTO> allByDate(@Param("year") int year);
+    List<CalendarInterfaceProjection> allByDate(@Param("year") int year);
 }
