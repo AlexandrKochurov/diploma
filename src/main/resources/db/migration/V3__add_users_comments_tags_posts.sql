@@ -1,20 +1,20 @@
 -- admin account
 INSERT INTO users
 (id, code, email, is_moderator, name, password, photo, reg_time)
-VALUES(1, NULL, 'admin@admin.ru', 1, 'Admin', '12345678', NULL, '2020-11-12');
+VALUES(1, NULL, 'admin@admin.ru', 1, 'Admin', '$2y$12$NKArmf9agtEQw7rPDN4zb.rE90zeewGAUWNRkSrYW662FwL77NyCS', NULL, '2020-11-12');
 
 -- users accounts
 INSERT INTO users
 (id, code, email, is_moderator, name, password, photo, reg_time)
-VALUES(2, NULL, 'user1@user.ru', 0, 'User1', '12345678', NULL, '2020-11-12');
+VALUES(2, NULL, 'user1@user.ru', 0, 'User1', '$2y$12$NKArmf9agtEQw7rPDN4zb.rE90zeewGAUWNRkSrYW662FwL77NyCS', NULL, '2020-11-12');
 
 INSERT INTO users
 (id, code, email, is_moderator, name, password, photo, reg_time)
-VALUES(3, NULL, 'user2@user.ru', 0, 'User2', '12345678', NULL, '2020-11-12');
+VALUES(3, NULL, 'user2@user.ru', 0, 'User2', '$2y$12$NKArmf9agtEQw7rPDN4zb.rE90zeewGAUWNRkSrYW662FwL77NyCS', NULL, '2020-11-12');
 
 INSERT INTO users
 (id, code, email, is_moderator, name, password, photo, reg_time)
-VALUES(4, NULL, 'user3@user.ru', 0, 'User3', '12345678', NULL, '2020-11-12');
+VALUES(4, NULL, 'user3@user.ru', 0, 'User3', '$2y$12$NKArmf9agtEQw7rPDN4zb.rE90zeewGAUWNRkSrYW662FwL77NyCS', NULL, '2020-11-12');
 
 -- posts
 INSERT INTO posts

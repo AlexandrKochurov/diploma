@@ -1,12 +1,17 @@
 package main.service.impl;
 
 import main.api.response.CalendarResponse;
+import main.api.response.SettingsResponse;
+import main.api.response.StatisticResponse;
 import main.api.response.TagResponse;
 import main.dto.CalendarInterfaceProjection;
 import main.dto.TagDTO;
 import main.dto.TagInterfaceProjection;
+import main.model.GlobalSettingsName;
 import main.model.User;
+import main.repositories.GlobalSettingsRepository;
 import main.repositories.PostRepository;
+import main.repositories.PostVoteRepository;
 import main.repositories.TagRepository;
 import main.service.GeneralService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +25,15 @@ import java.util.*;
 public class GeneralServiceImpl implements GeneralService {
     private final TagRepository tagRepository;
     private final PostRepository postRepository;
+    private final GlobalSettingsRepository globalSettingsRepository;
+    private final PostVoteRepository postVoteRepository;
 
     @Autowired
-    public GeneralServiceImpl(TagRepository tagRepository, PostRepository postRepository) {
+    public GeneralServiceImpl(TagRepository tagRepository, PostRepository postRepository, GlobalSettingsRepository globalSettingsRepository, PostVoteRepository postVoteRepository) {
         this.tagRepository = tagRepository;
         this.postRepository = postRepository;
+        this.globalSettingsRepository = globalSettingsRepository;
+        this.postVoteRepository = postVoteRepository;
     }
 
     @Override
@@ -48,14 +57,13 @@ public class GeneralServiceImpl implements GeneralService {
             year = LocalDate.now().getYear();
         }
         List<CalendarInterfaceProjection> calendarInterfaceProjectionList = postRepository.allByDate(year);
-        List<Integer> years = new ArrayList<>();
+        List<Integer> allYears = postRepository.allByYears();
         Map<String, Integer> posts = new HashMap<>();
 
         for(CalendarInterfaceProjection cip: calendarInterfaceProjectionList){
-            years.add(cip.getYear());
             posts.put(cip.getDate(), cip.getAmount());
         }
-        return new CalendarResponse(years, posts);
+        return new CalendarResponse(allYears, posts);
     }
 
     @Override
@@ -69,14 +77,20 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public Map<String, Integer> allStats(User user) {
-        return null;
+    public StatisticResponse allStats(User user) {
+        boolean statIsPub = globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.STATISTICS_IS_PUBLIC.toString()).equals("YES");
+        if(user.getIsModerator() != 1 && !statIsPub){
+            return new StatisticResponse();
+        }
+        return new StatisticResponse(
+                postRepository.countAllPosts(),
+                postVoteRepository.countAllLikes(),
+                postVoteRepository.countAllDislikes(),
+                postRepository.viewCountSum(),
+                postRepository.getFirstPublication().getEpochSecond()
+        );
     }
 
-    @Override
-    public Map<String, String> getSettings() {
-        return null;
-    }
 
     @Override
     public Map<String, String> setSettings() {

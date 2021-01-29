@@ -5,11 +5,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component
 @Data
+@Component
 @AllArgsConstructor
 @NoArgsConstructor
-public class CheckResponse {
-    private boolean result;
-    private UserLoginResponse userLoginResponse;
+public class CaptchaResponse {
+    private String secret;
+
+    private String image;
 }

@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.Instant;
 
 @Entity
 @Data
@@ -24,7 +24,7 @@ public class CaptchaCodes {
 
     //Дата и время генерации кода капчи DATETIME NOT_NULL
     @Column(nullable = false)
-    private Date time;
+    private Instant time;
 
     //Код, отображаемый на картинке капчи TINYTEXT NOT_NULL
     @Column(nullable = false)

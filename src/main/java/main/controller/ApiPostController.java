@@ -8,10 +8,10 @@ import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
 import main.model.Post;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import main.service.impl.PostServiceImpl;
-
 
 
 @RestController
@@ -22,7 +22,7 @@ public class ApiPostController {
     private final PostServiceImpl postServiceImpl;
 
     @Autowired
-    public ApiPostController(PostServiceImpl postServiceImpl){
+    public ApiPostController(PostServiceImpl postServiceImpl) {
         this.postServiceImpl = postServiceImpl;
     }
 
@@ -30,10 +30,10 @@ public class ApiPostController {
     @ApiOperation(value = "Вывод списка постов", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<PostsListResponse> getPosts(
-            @RequestParam(name = "offset", required = false, defaultValue= "0") int offset,
+            @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "mode", required = false, defaultValue = "recent") String mode
-    ){
+    ) {
         return ResponseEntity.ok(postServiceImpl.getAllPostsByMode(offset, limit, mode));
     }
 
@@ -44,7 +44,7 @@ public class ApiPostController {
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "query", required = false) String query
-    ){
+    ) {
         return ResponseEntity.ok(postServiceImpl.searchPosts(offset, limit, query));
     }
 
@@ -52,45 +52,48 @@ public class ApiPostController {
     @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<PostsListResponse> postsByDate(
-            @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
+            @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
-            @RequestParam(name = "mode", required = false) String date
-    ){
+            @RequestParam(name = "date", required = false) String date
+    ) {
         return ResponseEntity.ok(postServiceImpl.postsByDate(offset, limit, date));
     }
 
     @GetMapping(value = "/byTag")
-    @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
+    @ApiOperation(value = "Вывод списка постов по тегу", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Posts either found or not :)")
+//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<PostsListResponse> postsByTag(
-            @RequestParam(name = "limit", required = false, defaultValue= "10") int limit,
+            @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
-            @RequestParam(name = "mode", required = false) String tag
-    ){
+            @RequestParam(name = "tag", required = false) String tag
+    ) {
         return ResponseEntity.ok(postServiceImpl.postsByTag(offset, limit, tag));
     }
 
     @GetMapping(value = "/moderation")
     @ApiOperation(value = "Список постов на модерацию", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Posts either found or not :)")
+    @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<?> postsForModeration(
             @RequestParam(name = "offset", required = false) int offset,
             @RequestParam(name = "limit", required = false) int limit,
             @RequestParam(name = "status", required = false) String status
-    ){
+    ) {
         return ResponseEntity.ok(postServiceImpl.postsForModeration(offset, limit, status));
     }
 
     @GetMapping(value = "/my")
     @ApiOperation(value = "Список моих постов", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Posts either found or not :)")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<?> myPosts(
             @RequestParam(name = "offset", required = false) int offset,
             @RequestParam(name = "limit", required = false) int limit,
             @RequestParam(name = "id", required = false) int id,
             @RequestParam(name = "active", required = false) int active,
             @RequestParam(name = "status", required = false) String status
-    ){
+    ) {
         return ResponseEntity.ok(postServiceImpl.myPosts(offset, limit, id, active, status));
     }
 
@@ -100,27 +103,30 @@ public class ApiPostController {
             @ApiResponse(code = 200, message = "Пост успешно найден"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
+//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<PostByIdResponse> postById(@PathVariable int id) {
         return ResponseEntity.ok(postServiceImpl.postById(id));
     }
 
     @PostMapping(value = "")
     @ApiOperation(value = "Добавление поста", response = ResponseEntity.class)
-    @ApiResponses(value =  {
+    @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Пост успешно добавлен"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
-    public ResponseEntity<?> addPost(@RequestBody Post post){
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<?> addPost(@RequestBody Post post) {
         postServiceImpl.addPost(post);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping(value = "/{id}")
     @ApiOperation(value = "Изменение поста", response = ResponseEntity.class)
-    @ApiResponses(value =  {
+    @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Пост успешно изменен"),
             @ApiResponse(code = 404, message = "Пост не найден")
     })
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<?> editPost(
             @RequestBody Post post,
             @RequestParam(name = "id", required = false) Integer id

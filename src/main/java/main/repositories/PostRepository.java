@@ -8,7 +8,9 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostRepository extends CrudRepository<Post, Integer> {
@@ -84,7 +86,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
 
     @Query(value = "select * from posts " +
             "where posts.is_active=1 and posts.moderator_status='ACCEPTED' " +
-            "and posts.instant like :date",
+            "and date_format(posts.instant, '%Y-%m-%d') like :date",
             nativeQuery = true)
     List<Post> postsByDate(Pageable pageable, @Param("date") String date);
 
@@ -109,11 +111,24 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
 
     @Query(value = "select * from posts where id = :post_id and posts.moderator_status='ACCEPTED' and posts.is_active=1 and posts.instant<=now()",
             nativeQuery = true)
-    Post postById(@Param("post_id") int postId);
+    Optional<Post> postById(@Param("post_id") int postId);
 
     @Query(value = "select year(posts.instant) as year, date_format(posts.instant, '%Y-%m-%d') as date, count(*) as amount from posts " +
             "where year(posts.instant)= :year and posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() " +
             "group by year, date order by date",
             nativeQuery = true)
     List<CalendarInterfaceProjection> allByDate(@Param("year") int year);
+
+    @Query(value = "select year(posts.instant) as year from posts " +
+            "where posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() group by year",
+    nativeQuery = true)
+    List<Integer> allByYears();
+
+    @Query(value = "select sum(view_count) from posts",
+    nativeQuery = true)
+    int viewCountSum();
+
+    @Query(value = "select instant from posts where id=1",
+    nativeQuery = true)
+    Instant getFirstPublication();
 }

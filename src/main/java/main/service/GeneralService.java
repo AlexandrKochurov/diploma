@@ -1,6 +1,8 @@
 package main.service;
 
 import main.api.response.CalendarResponse;
+import main.api.response.SettingsResponse;
+import main.api.response.StatisticResponse;
 import main.api.response.TagResponse;
 import main.model.User;
 
@@ -20,9 +22,7 @@ public interface GeneralService {
 
     Map<String, Integer> myStats(User user);
 
-    Map<String, Integer> allStats(User user);
-
-    Map<String, String> getSettings();
+    StatisticResponse allStats(User user);
 
     Map<String, String> setSettings();
 }

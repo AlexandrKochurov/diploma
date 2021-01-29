@@ -79,26 +79,12 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostByIdResponse postById(int id){
-        Post post = postRepository.postById(id);
-        if(post == null) throw new NotFoundPostByIdException();
-        int viewCount = post.getViewCount();
-        post.setViewCount(viewCount + 1);
+    public PostByIdResponse postById(int id) {
+        Post post = postRepository.postById(id)
+                .orElseThrow(NotFoundPostByIdException::new);
+        post.setViewCount(post.getViewCount() + 1);
         postRepository.save(post);
-        List<String> tags = post.getTagList().stream().filter(tag -> tag.getId() == post.getId()).map(Tag::getName).collect(Collectors.toList());
-        return new PostByIdResponse(
-                post.getId(),
-                post.getInstant().getEpochSecond(),
-                post.getIsActive() == 1,
-                new UserDTO(post.getUserId().getId(), post.getUserId().getName()),
-                post.getTitle(),
-                post.getText(),
-                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
-                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
-                viewCount,
-                getPostCommentsDTO(post.getPostCommentsList()),
-                tags
-                );
+        return getPostByIdResponse(post);
     }
 
     @Override
@@ -149,5 +135,25 @@ public class PostServiceImpl implements PostService {
                                 )
                 )
                 .collect(toList());
+    }
+
+    private PostByIdResponse getPostByIdResponse(Post post){
+        return new PostByIdResponse(
+                post.getId(),
+                post.getInstant().getEpochSecond(),
+                post.getIsActive() == 1,
+                new UserDTO(post.getUserId().getId(), post.getUserId().getName()),
+                post.getTitle(),
+                post.getText(),
+                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
+                (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
+                post.getViewCount(),
+                getPostCommentsDTO(post.getPostCommentsList()),
+                post.getTagList().stream().filter(tag -> tag.getId() == post.getId()).map(Tag::getName).collect(Collectors.toList())
+        );
+    }
+
+    private int addViewToPost(int currentView){
+        return currentView + 1;
     }
 }

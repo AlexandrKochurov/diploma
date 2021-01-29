@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -28,15 +28,15 @@ public class User {
 
     //Дата и время регистрации пользователя DATETIME NOT_NULL
     @Column(name = "reg_time", nullable = false)
-    private Date regTime;
+    private Instant regTime;
 
     //Имя пользователя VARCHAR NOT_NULL
     @Column(nullable = false)
     private String name;
 
     //Email пользователя VARCHAR NOT_NULL
-    @Column(name = "email", nullable = false)
-    private String eMail;
+    @Column(nullable = false)
+    private String email;
 
     //Пароль пользователя, VARCHAR NOT_NULL
     @Column(nullable = false)
@@ -52,4 +52,8 @@ public class User {
 
     @OneToMany(mappedBy = "userId", fetch = FetchType.LAZY)
     private List<Post> posts;
+
+    public Role getRole(){
+        return isModerator == 1 ? Role.MODERATOR : Role.USER;
+    }
 }
