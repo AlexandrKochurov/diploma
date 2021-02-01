@@ -1,5 +1,7 @@
 package main.service;
 
+import main.api.response.CommentResponse;
+import main.api.response.LikeDislikeResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
 import main.model.Post;
@@ -34,4 +36,10 @@ public interface PostService {
 
     //Метод удаления поста
     void deletePost(int id) throws Exception;
+
+    LikeDislikeResponse setLike(int postId);
+
+    LikeDislikeResponse setDislike(int postId);
+
+    CommentResponse comment(int parentId, int postId, String text);
 }

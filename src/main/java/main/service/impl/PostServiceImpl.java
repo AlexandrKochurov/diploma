@@ -1,5 +1,7 @@
 package main.service.impl;
 
+import main.api.response.CommentResponse;
+import main.api.response.LikeDislikeResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
 import main.dto.PostCommentsDTO;
@@ -7,18 +9,22 @@ import main.dto.PostDTO;
 import main.dto.UserDTO;
 import main.exceptions.NotFoundPostByIdException;
 import main.exceptions.NotFoundPostsException;
-import main.model.ModerationStatus;
-import main.model.Post;
-import main.model.PostComments;
-import main.model.Tag;
+import main.model.*;
+import main.repositories.PostCommentsRepository;
+import main.repositories.PostVoteRepository;
+import main.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import main.repositories.PostRepository;
 import main.service.PostService;
 
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -27,12 +33,20 @@ import static java.util.stream.Collectors.toList;
 @Service
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
+    private final PostVoteRepository postVoteRepository;
+    private final UserRepository userRepository;
+    private final PostCommentsRepository postCommentsRepository;
+    private final byte LIKE = 1;
+    private final byte DISLIKE = -1;
 
     private final int ANNOUNCE_LENGTH = 23;
 
     @Autowired
-    public PostServiceImpl(PostRepository postRepository){
+    public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository, PostCommentsRepository postCommentsRepository) {
         this.postRepository = postRepository;
+        this.postVoteRepository = postVoteRepository;
+        this.userRepository = userRepository;
+        this.postCommentsRepository = postCommentsRepository;
     }
 
     @Override
@@ -40,11 +54,16 @@ public class PostServiceImpl implements PostService {
         Pageable pageable = PageRequest.of(offset / limit, limit);
         int quantity = postRepository.countAllPosts();
         switch (mode) {
-            case "recent" : return new PostsListResponse(quantity, getPostsDTO(postRepository.recentPosts(pageable)));
-            case "popular": return new PostsListResponse(quantity, getPostsDTO(postRepository.popularPosts(pageable)));
-            case "best": return new PostsListResponse(quantity, getPostsDTO(postRepository.bestPosts(pageable)));
-            case "early": return new PostsListResponse(quantity, getPostsDTO(postRepository.earlyPosts(pageable)));
-            default: throw new NotFoundPostsException();
+            case "recent":
+                return new PostsListResponse(quantity, getPostsDTO(postRepository.recentPosts(pageable)));
+            case "popular":
+                return new PostsListResponse(quantity, getPostsDTO(postRepository.popularPosts(pageable)));
+            case "best":
+                return new PostsListResponse(quantity, getPostsDTO(postRepository.bestPosts(pageable)));
+            case "early":
+                return new PostsListResponse(quantity, getPostsDTO(postRepository.earlyPosts(pageable)));
+            default:
+                throw new NotFoundPostsException();
         }
     }
 
@@ -105,6 +124,60 @@ public class PostServiceImpl implements PostService {
         postRepository.deleteById(id);
     }
 
+    @Override
+    public LikeDislikeResponse setLike(int postId) {
+        Post post = postRepository.postById(postId).orElseThrow(NotFoundPostByIdException::new);
+        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == 1)) {
+            return new LikeDislikeResponse(false);
+        }
+        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == -1)) {
+            postVoteRepository.changeLikeOrDislike(postId, LIKE);
+        } else {
+            postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), LIKE);
+        }
+        return new LikeDislikeResponse(true);
+    }
+
+    @Override
+    public LikeDislikeResponse setDislike(int postId) {
+        Post post = postRepository.postById(postId).orElseThrow(NotFoundPostByIdException::new);
+        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == -1)) {
+            return new LikeDislikeResponse(false);
+        }
+        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == 1)) {
+            postVoteRepository.changeLikeOrDislike(postId, DISLIKE);
+        } else {
+            postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), DISLIKE);
+        }
+        return new LikeDislikeResponse(true);
+    }
+
+    @Override
+    public CommentResponse comment(int parentId, int postId, String text) {
+        Map<String, String> errors = new HashMap<>();
+        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (postRepository.findById(postId).isEmpty()) {
+            errors.put("post_id", "There is no such post");
+        }
+        if (postCommentsRepository.checkParent(parentId) <= 0) {
+            errors.put("parent_id", "There is no such parental comment");
+        }
+        if (text.length() < 15) {
+            errors.put("text", "The text is too short or empty");
+        }
+        if (parentId == 0 && errors.isEmpty()) {
+            postCommentsRepository.newCommentToPost(postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
+            return new CommentResponse(postCommentsRepository.getLastCommentId());
+        }
+        if (parentId > 0 && errors.isEmpty()) {
+            postCommentsRepository.newCommentToComment(parentId, postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
+            return new CommentResponse(postCommentsRepository.getLastCommentId());
+        }
+        return new CommentResponse(false, errors);
+    }
+
     private List<PostDTO> getPostsDTO(List<Post> postList) {
         return postList.stream()
                 .map(
@@ -119,11 +192,11 @@ public class PostServiceImpl implements PostService {
                                         post.getPostCommentsList().size(),
                                         post.getViewCount(),
                                         new UserDTO(post.getUserId().getId(), post.getUserId().getName())
-                                        ))
+                                ))
                 .collect(toList());
     }
 
-    private List<PostCommentsDTO> getPostCommentsDTO(List<PostComments> postCommentsList){
+    private List<PostCommentsDTO> getPostCommentsDTO(List<PostComments> postCommentsList) {
         return postCommentsList.stream()
                 .map(
                         comment ->
@@ -137,7 +210,7 @@ public class PostServiceImpl implements PostService {
                 .collect(toList());
     }
 
-    private PostByIdResponse getPostByIdResponse(Post post){
+    private PostByIdResponse getPostByIdResponse(Post post) {
         return new PostByIdResponse(
                 post.getId(),
                 post.getInstant().getEpochSecond(),
@@ -153,7 +226,7 @@ public class PostServiceImpl implements PostService {
         );
     }
 
-    private int addViewToPost(int currentView){
+    private int addViewToPost(int currentView) {
         return currentView + 1;
     }
 }
