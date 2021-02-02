@@ -8,7 +8,6 @@ import main.api.request.RegisterRequest;
 import main.api.response.*;
 import main.service.impl.AuthServiceImpl;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -25,7 +24,6 @@ public class ApiAuthController {
     }
 
     @GetMapping("/check")
-//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<LoginResponse> check(Principal principal){
         return ResponseEntity.ok(authService.checkAuth(principal));
     }
@@ -33,7 +31,6 @@ public class ApiAuthController {
     @GetMapping("/captcha")
     @ApiOperation(value = "Получение капчи", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Captcha was generated successfully!")
-//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<CaptchaResponse> getCaptcha() throws IOException {
         return ResponseEntity.ok(authService.getCaptcha());
     }
@@ -41,7 +38,6 @@ public class ApiAuthController {
     @PostMapping("/register")
     @ApiOperation(value = "Регистрация пользователя", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Пользователь был успешно добавлен!")
-//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest){
         return ResponseEntity.ok(
                 authService.registration(registerRequest.getEmail(),
@@ -54,7 +50,6 @@ public class ApiAuthController {
     @PostMapping("/login")
     @ApiOperation(value = "Логин пользователя", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Пользователь успешно залогинился")
-//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest){
         return ResponseEntity.ok(authService.login(loginRequest));
     }

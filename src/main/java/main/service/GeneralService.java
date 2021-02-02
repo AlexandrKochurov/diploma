@@ -1,5 +1,6 @@
 package main.service;
 
+import main.api.request.SettingsRequest;
 import main.api.response.*;
 import main.model.User;
 
@@ -8,8 +9,6 @@ import java.util.Map;
 
 public interface GeneralService {
     String imageUpload(String path);
-
-    void addComment(Integer parentId, Integer postId, String text);
 
     TagResponse tagsList(String query);
 
@@ -21,9 +20,9 @@ public interface GeneralService {
 
     StatisticResponse allStats(User user);
 
-    Map<String, String> setSettings();
+    void setGlobalSettings(SettingsRequest settingsRequest);
 
-    CommentResponse comment(Integer parentId, int postId, String text);
+    CommentResponse comment(int parentId, int postId, String text);
 
     SettingsResponse getGlobalSettings();
 }

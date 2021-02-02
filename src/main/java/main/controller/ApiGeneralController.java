@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import main.api.request.CommentRequest;
+import main.api.request.SettingsRequest;
 import main.api.response.*;
 import main.model.User;
 import main.service.impl.GeneralServiceImpl;
@@ -15,31 +16,38 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping(value = "/api")
+@RequestMapping(value = "/api/")
 @Api(value = "General Controller")
 public class ApiGeneralController {
 
-    private final InitResponse initResponse;
     private final GeneralServiceImpl generalServiceImpl;
 
     @Autowired
-    public ApiGeneralController(InitResponse initResponse, GeneralServiceImpl generalServiceImpl) {
-        this.initResponse = initResponse;
+    public ApiGeneralController(GeneralServiceImpl generalServiceImpl) {
         this.generalServiceImpl = generalServiceImpl;
     }
 
-    @GetMapping("/init/")
-//    @PreAuthorize("hasAuthority('user:write')")
+    @GetMapping("init")
     private InitResponse init() {
-        return initResponse;
+        return new InitResponse();
     }
 
-    @GetMapping("/settings")
-    private SettingsResponse settings() {
-        return generalServiceImpl.getGlobalSettings();
+    @GetMapping("settings")
+    @ApiOperation(value = "Получение глобальных настроек", response = ResponseEntity.class)
+    @ApiResponse(code = 200, message = "Глобальные настройки получены")
+    private ResponseEntity<SettingsResponse> getSettings() {
+        return ResponseEntity.ok(generalServiceImpl.getGlobalSettings());
     }
 
-    @GetMapping("/tag")
+    @PutMapping("settings")
+    @ApiOperation(value = "Изменение глобальных настроек", response = ResponseEntity.class)
+    @ApiResponse(code = 200, message = "Глобальные настройки изменены")
+    @PreAuthorize("hasAuthority('user:moderate')")
+    private void setSettings(@RequestBody SettingsRequest settingsRequest) {
+        generalServiceImpl.setGlobalSettings(settingsRequest);
+    }
+
+    @GetMapping("tag")
     @ApiOperation(value = "Вывод списка тегов", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Список тегов выведен")
 //    @PreAuthorize("hasAuthority('user:write')")
@@ -49,7 +57,7 @@ public class ApiGeneralController {
         return ResponseEntity.ok(generalServiceImpl.tagsList(query));
     }
 
-    @GetMapping("/calendar")
+    @GetMapping("calendar")
     @ApiOperation(value = "Вывод календаря", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Календарь выведен")
 //    @PreAuthorize("hasAuthority('user:write')")
@@ -58,7 +66,7 @@ public class ApiGeneralController {
         return ResponseEntity.ok(generalServiceImpl.calendar(year));
     }
 
-    @GetMapping("/statistics/all")
+    @GetMapping("statistics/all")
     @ApiOperation(value = "Статистика по всему блогу", response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Статистика выведена"),
@@ -69,7 +77,7 @@ public class ApiGeneralController {
         return ResponseEntity.ok(generalServiceImpl.allStats(user));
     }
 
-    @PostMapping(value = "/comment")
+    @PostMapping(value = "comment")
     @ApiOperation(value = "Добавление комментария", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Комментарий успешно добавлен")
     @PreAuthorize("hasAuthority('user:write')")

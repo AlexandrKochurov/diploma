@@ -1,5 +1,6 @@
 package main.service.impl;
 
+import main.api.request.SettingsRequest;
 import main.api.response.*;
 import main.dto.CalendarInterfaceProjection;
 import main.dto.TagDTO;
@@ -41,11 +42,6 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public void addComment(Integer parentId, Integer postId, String text) {
-
-    }
-
-    @Override
     public TagResponse tagsList(String query) {
         return new TagResponse(getTagDTOs(tagRepository.tagsByWeight(query)));
     }
@@ -77,7 +73,7 @@ public class GeneralServiceImpl implements GeneralService {
 
     @Override
     public StatisticResponse allStats(User user) {
-        boolean statIsPub = globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.STATISTICS_IS_PUBLIC.toString()).equals("YES");
+        boolean statIsPub = globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.STATISTICS_IS_PUBLIC.toString());
         if(user.getIsModerator() != 1 && !statIsPub){
             return new StatisticResponse();
         }
@@ -91,7 +87,7 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public CommentResponse comment(Integer parentId, int postId, String text) {
+    public CommentResponse comment(int parentId, int postId, String text) {
         Map<String, String> errors = new HashMap<>();
         org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (postRepository.findById(postId).isEmpty()) {
@@ -103,12 +99,12 @@ public class GeneralServiceImpl implements GeneralService {
         if (text.length() < 15) {
             errors.put("text", "The text is too short or empty");
         }
-        if (parentId==null && errors.isEmpty()) {
-            postCommentsRepository.newCommentToPost(postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
-            return new CommentResponse(postCommentsRepository.getLastCommentId());
-        }
         if (parentId > 0 && errors.isEmpty()) {
             postCommentsRepository.newCommentToComment(parentId, postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
+            return new CommentResponse(postCommentsRepository.getLastCommentId());
+        }
+        if (errors.isEmpty()) {
+            postCommentsRepository.newCommentToPost(postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
             return new CommentResponse(postCommentsRepository.getLastCommentId());
         }
         return new CommentResponse(false, errors);
@@ -117,16 +113,18 @@ public class GeneralServiceImpl implements GeneralService {
     @Override
     public SettingsResponse getGlobalSettings() {
         SettingsResponse settingsResponse = new SettingsResponse();
-        settingsResponse.setStatisticsIsPublic(true);
-        settingsResponse.setPostModeration(true);
-        settingsResponse.setMultiuserMode(true);
+        settingsResponse.setStatisticsIsPublic(globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.STATISTICS_IS_PUBLIC.toString()));
+        settingsResponse.setPostModeration(globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.POST_PREMODERATION.toString()));
+        settingsResponse.setMultiuserMode(globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.MULTIUSER_MODE.toString()));
         return settingsResponse;
     }
 
 
     @Override
-    public Map<String, String> setSettings() {
-        return null;
+    public void setGlobalSettings(SettingsRequest settingsRequest) {
+        globalSettingsRepository.setGlobalSettings(settingsRequest.isMultiuserMode(), GlobalSettingsName.MULTIUSER_MODE.toString());
+        globalSettingsRepository.setGlobalSettings(settingsRequest.isPostModeration(), GlobalSettingsName.POST_PREMODERATION.toString());
+        globalSettingsRepository.setGlobalSettings(settingsRequest.isStatisticsIsPublic(), GlobalSettingsName.STATISTICS_IS_PUBLIC.toString());
     }
 
     private List<TagDTO> getTagDTOs(List<TagInterfaceProjection> tagList){

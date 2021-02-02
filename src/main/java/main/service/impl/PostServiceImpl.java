@@ -1,6 +1,5 @@
 package main.service.impl;
 
-import main.api.response.CommentResponse;
 import main.api.response.LikeDislikeResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
@@ -10,7 +9,6 @@ import main.dto.UserDTO;
 import main.exceptions.NotFoundPostByIdException;
 import main.exceptions.NotFoundPostsException;
 import main.model.*;
-import main.repositories.PostCommentsRepository;
 import main.repositories.PostVoteRepository;
 import main.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +20,7 @@ import main.repositories.PostRepository;
 import main.service.PostService;
 
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
