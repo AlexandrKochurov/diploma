@@ -35,18 +35,16 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final PostVoteRepository postVoteRepository;
     private final UserRepository userRepository;
-    private final PostCommentsRepository postCommentsRepository;
     private final byte LIKE = 1;
     private final byte DISLIKE = -1;
 
     private final int ANNOUNCE_LENGTH = 23;
 
     @Autowired
-    public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository, PostCommentsRepository postCommentsRepository) {
+    public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository) {
         this.postRepository = postRepository;
         this.postVoteRepository = postVoteRepository;
         this.userRepository = userRepository;
-        this.postCommentsRepository = postCommentsRepository;
     }
 
     @Override
@@ -152,30 +150,6 @@ public class PostServiceImpl implements PostService {
             postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), DISLIKE);
         }
         return new LikeDislikeResponse(true);
-    }
-
-    @Override
-    public CommentResponse comment(int parentId, int postId, String text) {
-        Map<String, String> errors = new HashMap<>();
-        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (postRepository.findById(postId).isEmpty()) {
-            errors.put("post_id", "There is no such post");
-        }
-        if (postCommentsRepository.checkParent(parentId) <= 0) {
-            errors.put("parent_id", "There is no such parental comment");
-        }
-        if (text.length() < 15) {
-            errors.put("text", "The text is too short or empty");
-        }
-        if (parentId == 0 && errors.isEmpty()) {
-            postCommentsRepository.newCommentToPost(postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
-            return new CommentResponse(postCommentsRepository.getLastCommentId());
-        }
-        if (parentId > 0 && errors.isEmpty()) {
-            postCommentsRepository.newCommentToComment(parentId, postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
-            return new CommentResponse(postCommentsRepository.getLastCommentId());
-        }
-        return new CommentResponse(false, errors);
     }
 
     private List<PostDTO> getPostsDTO(List<Post> postList) {

@@ -4,9 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import main.api.request.CommentRequest;
 import main.api.request.LikeAndDislikeRequest;
-import main.api.response.CommentResponse;
 import main.api.response.LikeDislikeResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
@@ -153,13 +151,5 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<LikeDislikeResponse> dislike(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
         return ResponseEntity.ok(postServiceImpl.setDislike(likeAndDislikeRequest.getPostId()));
-    }
-
-    @PostMapping(value = "/comment")
-    @ApiOperation(value = "Добавление комментария", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Комментарий успешно добавлен")
-    @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<CommentResponse> comment(@RequestBody CommentRequest commentRequest){
-        return ResponseEntity.ok(postServiceImpl.comment(commentRequest.getParentId(), commentRequest.getPostId(), commentRequest.getText()));
     }
 }

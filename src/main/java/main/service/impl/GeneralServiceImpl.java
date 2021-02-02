@@ -1,20 +1,15 @@
 package main.service.impl;
 
-import main.api.response.CalendarResponse;
-import main.api.response.SettingsResponse;
-import main.api.response.StatisticResponse;
-import main.api.response.TagResponse;
+import main.api.response.*;
 import main.dto.CalendarInterfaceProjection;
 import main.dto.TagDTO;
 import main.dto.TagInterfaceProjection;
 import main.model.GlobalSettingsName;
 import main.model.User;
-import main.repositories.GlobalSettingsRepository;
-import main.repositories.PostRepository;
-import main.repositories.PostVoteRepository;
-import main.repositories.TagRepository;
+import main.repositories.*;
 import main.service.GeneralService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -27,13 +22,17 @@ public class GeneralServiceImpl implements GeneralService {
     private final PostRepository postRepository;
     private final GlobalSettingsRepository globalSettingsRepository;
     private final PostVoteRepository postVoteRepository;
+    private final PostCommentsRepository postCommentsRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public GeneralServiceImpl(TagRepository tagRepository, PostRepository postRepository, GlobalSettingsRepository globalSettingsRepository, PostVoteRepository postVoteRepository) {
+    public GeneralServiceImpl(TagRepository tagRepository, PostRepository postRepository, GlobalSettingsRepository globalSettingsRepository, PostVoteRepository postVoteRepository, PostCommentsRepository postCommentsRepository, UserRepository userRepository) {
         this.tagRepository = tagRepository;
         this.postRepository = postRepository;
         this.globalSettingsRepository = globalSettingsRepository;
         this.postVoteRepository = postVoteRepository;
+        this.postCommentsRepository = postCommentsRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -89,6 +88,39 @@ public class GeneralServiceImpl implements GeneralService {
                 postRepository.viewCountSum(),
                 postRepository.getFirstPublication().getEpochSecond()
         );
+    }
+
+    @Override
+    public CommentResponse comment(Integer parentId, int postId, String text) {
+        Map<String, String> errors = new HashMap<>();
+        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (postRepository.findById(postId).isEmpty()) {
+            errors.put("post_id", "There is no such post");
+        }
+        if (postCommentsRepository.checkParent(parentId) <= 0) {
+            errors.put("parent_id", "There is no such parental comment");
+        }
+        if (text.length() < 15) {
+            errors.put("text", "The text is too short or empty");
+        }
+        if (parentId==null && errors.isEmpty()) {
+            postCommentsRepository.newCommentToPost(postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
+            return new CommentResponse(postCommentsRepository.getLastCommentId());
+        }
+        if (parentId > 0 && errors.isEmpty()) {
+            postCommentsRepository.newCommentToComment(parentId, postId, text, userRepository.findByEmail(user.getUsername()).get().getId());
+            return new CommentResponse(postCommentsRepository.getLastCommentId());
+        }
+        return new CommentResponse(false, errors);
+    }
+
+    @Override
+    public SettingsResponse getGlobalSettings() {
+        SettingsResponse settingsResponse = new SettingsResponse();
+        settingsResponse.setStatisticsIsPublic(true);
+        settingsResponse.setPostModeration(true);
+        settingsResponse.setMultiuserMode(true);
+        return settingsResponse;
     }
 
 

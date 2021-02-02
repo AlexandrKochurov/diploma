@@ -1,9 +1,6 @@
 package main.service;
 
-import main.api.response.CalendarResponse;
-import main.api.response.SettingsResponse;
-import main.api.response.StatisticResponse;
-import main.api.response.TagResponse;
+import main.api.response.*;
 import main.model.User;
 
 import java.io.File;
@@ -25,4 +22,8 @@ public interface GeneralService {
     StatisticResponse allStats(User user);
 
     Map<String, String> setSettings();
+
+    CommentResponse comment(Integer parentId, int postId, String text);
+
+    SettingsResponse getGlobalSettings();
 }

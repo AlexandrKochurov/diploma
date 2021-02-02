@@ -40,6 +40,4 @@ public interface PostService {
     LikeDislikeResponse setLike(int postId);
 
     LikeDislikeResponse setDislike(int postId);
-
-    CommentResponse comment(int parentId, int postId, String text);
 }

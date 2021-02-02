@@ -4,19 +4,14 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import main.api.request.CommentRequest;
 import main.api.response.*;
 import main.model.User;
-import main.service.SettingsService;
 import main.service.impl.GeneralServiceImpl;
-import main.service.impl.SettingsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 
 
 @RestController
@@ -25,26 +20,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class ApiGeneralController {
 
     private final InitResponse initResponse;
-    private final SettingsServiceImpl settingsServiceImpl;
     private final GeneralServiceImpl generalServiceImpl;
 
     @Autowired
-    public ApiGeneralController(InitResponse initResponse, SettingsServiceImpl settingsServiceImpl, GeneralServiceImpl generalServiceImpl) {
+    public ApiGeneralController(InitResponse initResponse, GeneralServiceImpl generalServiceImpl) {
         this.initResponse = initResponse;
-        this.settingsServiceImpl = settingsServiceImpl;
         this.generalServiceImpl = generalServiceImpl;
     }
 
-    @GetMapping("/init")
+    @GetMapping("/init/")
 //    @PreAuthorize("hasAuthority('user:write')")
     private InitResponse init() {
         return initResponse;
     }
 
     @GetMapping("/settings")
-//    @PreAuthorize("hasAuthority('user:write')")
     private SettingsResponse settings() {
-        return settingsServiceImpl.getGlobalSettings();
+        return generalServiceImpl.getGlobalSettings();
     }
 
     @GetMapping("/tag")
@@ -75,5 +67,13 @@ public class ApiGeneralController {
 //    @PreAuthorize("hasAuthority('user:moderate')")
     private ResponseEntity<StatisticResponse> statistics(User user){
         return ResponseEntity.ok(generalServiceImpl.allStats(user));
+    }
+
+    @PostMapping(value = "/comment")
+    @ApiOperation(value = "Добавление комментария", response = ResponseEntity.class)
+    @ApiResponse(code = 200, message = "Комментарий успешно добавлен")
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<CommentResponse> comment(@RequestBody CommentRequest commentRequest){
+        return ResponseEntity.ok(generalServiceImpl.comment(commentRequest.getParentId(), commentRequest.getPostId(), commentRequest.getText()));
     }
 }

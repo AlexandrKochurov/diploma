@@ -30,5 +30,5 @@ public interface PostCommentsRepository extends CrudRepository<PostComments, Int
 
     @Query(value = "select parent_id from post_comments where parent_id = :parent_id",
     nativeQuery = true)
-    int checkParent(@Param("parent_id") int parentId);
+    Integer checkParent(@Param("parent_id") int parentId);
 }
