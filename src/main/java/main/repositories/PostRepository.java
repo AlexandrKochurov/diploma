@@ -28,7 +28,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
 
     @Query(value = "select count(*) from posts " +
             "where posts.is_active=1 and posts.moderator_status='ACCEPTED' " +
-            "and posts.instant like :date",
+            "and posts.instant =:date",
             nativeQuery = true)
     int countPostsByDate(@Param("date") String date);
 

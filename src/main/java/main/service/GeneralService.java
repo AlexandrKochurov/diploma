@@ -1,20 +1,24 @@
 package main.service;
 
+import main.api.request.ChangeProfileRequest;
+import main.api.request.ImageUploadRequest;
 import main.api.request.SettingsRequest;
 import main.api.response.*;
 import main.model.User;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 public interface GeneralService {
-    String imageUpload(String path);
+    String imageUpload(MultipartFile multipartFile) throws IOException;
 
     TagResponse tagsList(String query);
 
     CalendarResponse calendar(Integer year);
 
-    User changeProfile(File photo, Integer removePhoto, String name, String email, String password);
+    ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest);
 
     Map<String, Integer> myStats(User user);
 

@@ -34,7 +34,7 @@ public class PostServiceImpl implements PostService {
     private final byte LIKE = 1;
     private final byte DISLIKE = -1;
 
-    private final int ANNOUNCE_LENGTH = 23;
+    private final int ANNOUNCE_LENGTH = 50;
 
     @Autowired
     public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository) {

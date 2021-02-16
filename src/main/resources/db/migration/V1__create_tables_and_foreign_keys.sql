@@ -12,7 +12,8 @@ create table global_settings(
     value varchar(255) not null,
     primary key (id));
 
-create table hibernate_sequence(next_val bigint);
+create table hibernate_sequence(
+    next_val bigint not null);
 
 create table post_comments(
     id integer not null auto_increment,

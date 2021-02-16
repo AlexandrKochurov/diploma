@@ -1,23 +1,33 @@
 package main.service.impl;
 
+import main.api.request.ChangeProfileRequest;
 import main.api.request.SettingsRequest;
 import main.api.response.*;
 import main.dto.CalendarInterfaceProjection;
 import main.dto.TagDTO;
 import main.dto.TagInterfaceProjection;
+import main.exceptions.BadImageException;
 import main.model.GlobalSettingsName;
 import main.model.User;
 import main.repositories.*;
 import main.service.GeneralService;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
 
 @Service
+@Transactional
 public class GeneralServiceImpl implements GeneralService {
     private final TagRepository tagRepository;
     private final PostRepository postRepository;
@@ -25,6 +35,12 @@ public class GeneralServiceImpl implements GeneralService {
     private final PostVoteRepository postVoteRepository;
     private final PostCommentsRepository postCommentsRepository;
     private final UserRepository userRepository;
+
+    @Value("${blog.max_image_size}")
+    private int maxFileSize;
+
+    @Value("${uploadPath}")
+    private String uploadPath;
 
     @Autowired
     public GeneralServiceImpl(TagRepository tagRepository, PostRepository postRepository, GlobalSettingsRepository globalSettingsRepository, PostVoteRepository postVoteRepository, PostCommentsRepository postCommentsRepository, UserRepository userRepository) {
@@ -37,8 +53,25 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public String imageUpload(String path) {
-        return null;
+    public String imageUpload(MultipartFile multipartFile) throws IOException {
+        String extension = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
+        Path path = Path.of("C:/Diploma/src/main/resources/upload/" + createRandomPath() + multipartFile.getOriginalFilename());
+        Map<String, String> errors = new HashMap<>();
+        assert extension != null;
+        if (!extension.equalsIgnoreCase("jpg") && !extension.equalsIgnoreCase("png")) {
+            errors.put("imageExtension", "Неверное расширение файла");
+        }
+        if (multipartFile.getSize() > maxFileSize) {
+            errors.put("image", "Размер файла превышает допустимый размер");
+        }
+        if (errors.isEmpty()) {
+            File file = new File(path.toString());
+            file.mkdirs();
+            multipartFile.transferTo(file);
+            return file.getPath().substring(29).replace("\\", "/");
+        } else {
+            throw new BadImageException(false, errors);
+        }
     }
 
     @Override
@@ -48,22 +81,23 @@ public class GeneralServiceImpl implements GeneralService {
 
     @Override
     public CalendarResponse calendar(Integer year) {
-        if(year == 0){
+        if (year == 0) {
             year = LocalDate.now().getYear();
         }
         List<CalendarInterfaceProjection> calendarInterfaceProjectionList = postRepository.allByDate(year);
         List<Integer> allYears = postRepository.allByYears();
         Map<String, Integer> posts = new HashMap<>();
 
-        for(CalendarInterfaceProjection cip: calendarInterfaceProjectionList){
+        for (CalendarInterfaceProjection cip : calendarInterfaceProjectionList) {
             posts.put(cip.getDate(), cip.getAmount());
         }
         return new CalendarResponse(allYears, posts);
     }
 
     @Override
-    public User changeProfile(File photo, Integer removePhoto, String name, String email, String password) {
-        return null;
+    public ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) {
+        Map<String, String> errors = new HashMap<>();
+        return new ChangeProfileResponse();
     }
 
     @Override
@@ -74,7 +108,7 @@ public class GeneralServiceImpl implements GeneralService {
     @Override
     public StatisticResponse allStats(User user) {
         boolean statIsPub = globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.STATISTICS_IS_PUBLIC.toString());
-        if(user.getIsModerator() != 1 && !statIsPub){
+        if (user.getIsModerator() != 1 && !statIsPub) {
             return new StatisticResponse();
         }
         return new StatisticResponse(
@@ -127,25 +161,50 @@ public class GeneralServiceImpl implements GeneralService {
         globalSettingsRepository.setGlobalSettings(settingsRequest.isStatisticsIsPublic(), GlobalSettingsName.STATISTICS_IS_PUBLIC.toString());
     }
 
-    private List<TagDTO> getTagDTOs(List<TagInterfaceProjection> tagList){
+    private List<TagDTO> getTagDTOs(List<TagInterfaceProjection> tagList) {
         double weightReference = 0;
         //Нахожу максимум
-        for(TagInterfaceProjection tagInterfaceProjection: tagList){
-            if(weightReference < tagInterfaceProjection.getWeight()){
+        for (TagInterfaceProjection tagInterfaceProjection : tagList) {
+            if (weightReference < tagInterfaceProjection.getWeight()) {
                 weightReference = tagInterfaceProjection.getWeight();
             }
         }
         List<TagDTO> tagDTOList = new ArrayList<>();
         //Если вес совпадает с максимумом присваем нормальный вес 1, иначе получаем свой нормальный вес
-        for(TagInterfaceProjection tagInterfaceProjection: tagList){
-            if(tagInterfaceProjection.getWeight() == weightReference){
+        for (TagInterfaceProjection tagInterfaceProjection : tagList) {
+            if (tagInterfaceProjection.getWeight() == weightReference) {
                 tagDTOList.add(new TagDTO(tagInterfaceProjection.getName(), 1));
             }
-            if(tagInterfaceProjection.getWeight() < weightReference){
-                tagDTOList.add(new TagDTO(tagInterfaceProjection.getName(), tagInterfaceProjection.getWeight()/weightReference));
+            if (tagInterfaceProjection.getWeight() < weightReference) {
+                tagDTOList.add(new TagDTO(tagInterfaceProjection.getName(), tagInterfaceProjection.getWeight() / weightReference));
             }
         }
         tagDTOList.sort(Comparator.comparing(TagDTO::getWeight).reversed());
         return tagDTOList;
+    }
+
+    private String createRandomPath() {
+        StringBuilder stringBuilder = new StringBuilder();
+        Random random = new Random();
+        String alphabet = "abcdefghijklmnopqrstuvwxyz";
+        for (int i = 0; i < 6; i++) {
+            stringBuilder.append(alphabet.charAt(random.nextInt(alphabet.length())));
+            if (i == 1 || i == 3 || i == 5) stringBuilder.append("/");
+        }
+        return stringBuilder.toString();
+    }
+
+    public byte[] getImage(String path) {
+        File file = new File(uploadPath + path);
+        byte[] image = new byte[0];
+        if (file.exists()) {
+            try (FileInputStream is = new FileInputStream(file)) {
+                image = is.readAllBytes();
+            } catch (IOException e) {
+                e.printStackTrace();
+                image = new byte[0];
+            }
+        }
+        return image;
     }
 }

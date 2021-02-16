@@ -1,17 +1,21 @@
 package main.api.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class CheckResponse {
+public class ChangeProfileResponse {
     private boolean result;
-    private UserLoginResponse userLoginResponse;
+    private Map<String, String> errors;
+
+    public ChangeProfileResponse(boolean result) {
+        this.result = result;
+    }
 }
