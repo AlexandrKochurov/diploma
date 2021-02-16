@@ -127,7 +127,7 @@ public class GeneralServiceImpl implements GeneralService {
         if (postRepository.findById(postId).isEmpty()) {
             errors.put("post_id", "There is no such post");
         }
-        if (postCommentsRepository.checkParent(parentId) <= 0) {
+        if (parentId != 0 && postCommentsRepository.checkParent(parentId) == 0) {
             errors.put("parent_id", "There is no such parental comment");
         }
         if (text.length() < 15) {
@@ -195,7 +195,7 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     public byte[] getImage(String path) {
-        File file = new File(uploadPath + path);
+        File file = new File("C:/Diploma/src/main/resources" + uploadPath + path);
         byte[] image = new byte[0];
         if (file.exists()) {
             try (FileInputStream is = new FileInputStream(file)) {

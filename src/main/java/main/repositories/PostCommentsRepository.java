@@ -20,7 +20,7 @@ public interface PostCommentsRepository extends CrudRepository<PostComments, Int
 
     @Transactional
     @Modifying
-    @Query(value = "insert into post_comments(parent_id, post_id, text, time) values(:parent_id, :post_id, :text, now(), :user_id)",
+    @Query(value = "insert into post_comments(parent_id, post_id, text, time, user_id) values(:parent_id, :post_id, :text, now(), :user_id)",
     nativeQuery = true)
     void newCommentToComment(@Param("parent_id") int parentId, @Param("post_id") int postId, @Param("text") String text,  @Param("user_id") int userId);
 
@@ -28,7 +28,7 @@ public interface PostCommentsRepository extends CrudRepository<PostComments, Int
     nativeQuery = true)
     int getLastCommentId();
 
-    @Query(value = "select parent_id from post_comments where parent_id = :parent_id",
+    @Query(value = "select id from post_comments where id = :id",
     nativeQuery = true)
-    Integer checkParent(@Param("parent_id") int parentId);
+    int checkParent(@Param("id") int id);
 }

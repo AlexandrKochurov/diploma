@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.io.IOException;
+
 @Controller
 public class DefaultController {
     private final GeneralServiceImpl generalService;
@@ -28,7 +30,7 @@ public class DefaultController {
     public @ResponseBody byte[] getImage(@PathVariable("firstDir") String firstDir,
                     @PathVariable("secondDir") String secondDir,
                     @PathVariable("thirdDir") String thirdDir,
-                    @PathVariable("fileName") String fileName) {
+                    @PathVariable("fileName") String fileName) throws IOException {
         String path = "/" + firstDir + "/" + secondDir + "/" + thirdDir + "/" + fileName;
         return generalService.getImage(path);
     }
