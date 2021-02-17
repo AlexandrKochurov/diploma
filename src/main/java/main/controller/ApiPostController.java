@@ -142,7 +142,7 @@ public class ApiPostController {
     @ApiResponse(code = 200, message = "Лайк поставлен")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<LikeDislikeResponse> like(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
-        return ResponseEntity.ok(postServiceImpl.setLike(likeAndDislikeRequest.getPostId()));
+        return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), true));
     }
 
     @PostMapping(value = "/dislike")
@@ -150,6 +150,6 @@ public class ApiPostController {
     @ApiResponse(code = 200, message = "Дизлайк поставлен")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<LikeDislikeResponse> dislike(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
-        return ResponseEntity.ok(postServiceImpl.setDislike(likeAndDislikeRequest.getPostId()));
+        return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), false));
     }
 }

@@ -118,32 +118,29 @@ public class PostServiceImpl implements PostService {
         postRepository.deleteById(id);
     }
 
-    @Override
-    public LikeDislikeResponse setLike(int postId) {
+    public LikeDislikeResponse setLikeOrDislike(int postId, boolean separation) {
         Post post = postRepository.postById(postId).orElseThrow(NotFoundPostByIdException::new);
         org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == 1)) {
-            return new LikeDislikeResponse(false);
-        }
-        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == -1)) {
-            postVoteRepository.changeLikeOrDislike(postId, LIKE);
+        boolean likeCheck = post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == 1);
+        boolean dislikeCheck = post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == -1);
+        if (separation) {
+            if (likeCheck) {
+                return new LikeDislikeResponse(false);
+            }
+            if (dislikeCheck) {
+                postVoteRepository.changeLikeOrDislike(postId, LIKE);
+            } else {
+                postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), LIKE);
+            }
         } else {
-            postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), LIKE);
-        }
-        return new LikeDislikeResponse(true);
-    }
-
-    @Override
-    public LikeDislikeResponse setDislike(int postId) {
-        Post post = postRepository.postById(postId).orElseThrow(NotFoundPostByIdException::new);
-        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == -1)) {
-            return new LikeDislikeResponse(false);
-        }
-        if (post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == 1)) {
-            postVoteRepository.changeLikeOrDislike(postId, DISLIKE);
-        } else {
-            postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), DISLIKE);
+            if (dislikeCheck) {
+                return new LikeDislikeResponse(false);
+            }
+            if (likeCheck) {
+                postVoteRepository.changeLikeOrDislike(postId, DISLIKE);
+            } else {
+                postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), DISLIKE);
+            }
         }
         return new LikeDislikeResponse(true);
     }

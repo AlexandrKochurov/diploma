@@ -37,7 +37,5 @@ public interface PostService {
     //Метод удаления поста
     void deletePost(int id) throws Exception;
 
-    LikeDislikeResponse setLike(int postId);
-
-    LikeDislikeResponse setDislike(int postId);
+    LikeDislikeResponse setLikeOrDislike(int postId, boolean separator);
 }
