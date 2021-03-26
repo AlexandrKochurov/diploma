@@ -1,8 +1,7 @@
 package main.service.impl;
 
-import main.api.response.LikeDislikeResponse;
-import main.api.response.PostByIdResponse;
-import main.api.response.PostsListResponse;
+import main.api.request.AddOrEditPostRequest;
+import main.api.response.*;
 import main.dto.PostCommentsDTO;
 import main.dto.PostDTO;
 import main.dto.UserDTO;
@@ -10,6 +9,7 @@ import main.exceptions.NotFoundPostByIdException;
 import main.exceptions.NotFoundPostsException;
 import main.model.*;
 import main.repositories.PostVoteRepository;
+import main.repositories.TagRepository;
 import main.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +20,8 @@ import main.repositories.PostRepository;
 import main.service.PostService;
 
 
-import java.util.List;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -31,16 +32,18 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final PostVoteRepository postVoteRepository;
     private final UserRepository userRepository;
+    private final TagRepository tagRepository;
     private final byte LIKE = 1;
     private final byte DISLIKE = -1;
 
     private final int ANNOUNCE_LENGTH = 50;
 
     @Autowired
-    public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository) {
+    public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository, TagRepository tagRepository) {
         this.postRepository = postRepository;
         this.postVoteRepository = postVoteRepository;
         this.userRepository = userRepository;
+        this.tagRepository = tagRepository;
     }
 
     @Override
@@ -86,30 +89,62 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostsListResponse myPosts(int offset, int limit, int userId, int active, String status) {
+    public PostsListResponse myPosts(int offset, int limit, String status) {
         Pageable pageable = PageRequest.of(offset / limit, limit);
-        return new PostsListResponse(postRepository.countMyPosts(userId, status, active), getPostsDTO(postRepository.myPosts(pageable, userId, status, active)));
+        int userId = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get().getId();
+        int isActive = 0;
+        String moderatorStatus = null;
+        switch (status) {
+            case "inactive":
+                break;
+
+            case "pending":
+                isActive = 1;
+                moderatorStatus = "NEW";
+                break;
+
+            case "declined":
+                isActive = 1;
+                moderatorStatus = "DECLINED";
+                break;
+
+            case "published":
+                isActive = 1;
+                moderatorStatus = "ACCEPTED";
+                break;
+        }
+        return new PostsListResponse(postRepository.countMyPosts(userId, moderatorStatus, isActive), getPostsDTO(postRepository.myPosts(pageable, userId, moderatorStatus, isActive)));
     }
 
     @Override
     public PostByIdResponse postById(int id) {
         Post post = postRepository.postById(id)
                 .orElseThrow(NotFoundPostByIdException::new);
-        post.setViewCount(post.getViewCount() + 1);
+        post.setViewCount(addViewToPost(post.getViewCount(), post));
         postRepository.save(post);
         return getPostByIdResponse(post);
     }
 
     @Override
-    public void addPost(Post post) {
-        postRepository.save(post);
+    public AddOrEditPostResponse addPost(AddOrEditPostRequest addPostRequest) {
+        Post post = new Post();
+        Map<String, String> errors = addOrChangePost(post, addPostRequest);
+        if (errors.isEmpty()) {
+            return new AddOrEditPostResponse(true);
+        } else {
+            return new AddOrEditPostResponse(false, errors);
+        }
     }
 
     @Override
-    public void editPost(int id, Post post) throws Exception {
-        post.setModStatus(ModerationStatus.NEW);
-        postRepository.findById(id).orElseThrow(() -> new Exception("Post doesn't exist"));
-        postRepository.save(post);
+    public AddOrEditPostResponse editPost(int id, AddOrEditPostRequest editPostRequest) throws Exception {
+        Post postToChange = postRepository.postById(id).orElseThrow(NotFoundPostByIdException::new);
+        Map<String, String> errors = addOrChangePost(postToChange, editPostRequest);
+        if (errors.isEmpty()) {
+            return new AddOrEditPostResponse(true);
+        } else {
+            return new AddOrEditPostResponse(false, errors);
+        }
     }
 
     @Override
@@ -118,30 +153,27 @@ public class PostServiceImpl implements PostService {
         postRepository.deleteById(id);
     }
 
-    public LikeDislikeResponse setLikeOrDislike(int postId, boolean separation) {
+    public LikeDislikeResponse setLikeOrDislike(int postId, byte vote) {
         Post post = postRepository.postById(postId).orElseThrow(NotFoundPostByIdException::new);
-        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        boolean likeCheck = post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == 1);
-        boolean dislikeCheck = post.getPostVoteList().stream().anyMatch(x -> x.getPostId() == postId && x.getValue() == -1);
-        if (separation) {
-            if (likeCheck) {
-                return new LikeDislikeResponse(false);
-            }
-            if (dislikeCheck) {
-                postVoteRepository.changeLikeOrDislike(postId, LIKE);
-            } else {
-                postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), LIKE);
-            }
-        } else {
-            if (dislikeCheck) {
-                return new LikeDislikeResponse(false);
-            }
-            if (likeCheck) {
-                postVoteRepository.changeLikeOrDislike(postId, DISLIKE);
-            } else {
-                postVoteRepository.newLikeOrDislike(postId, userRepository.findByEmail(user.getUsername()).get().getId(), DISLIKE);
-            }
+        int userId = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get().getId();
+        PostVote postVote = post.getPostVoteList() // если есть голос, получаем его, если нет голоса - создаем новый
+                .stream()
+                .filter(pv -> pv.getUserId() == userId)
+                .findFirst()
+                .orElseGet(PostVote::new);
+
+        if (postVote.getValue() == vote) { // если голос тот же что и пробуют поставить возвращаем false
+            return new LikeDislikeResponse(false);
         }
+
+        // иначе заполняем данными, новая дата, и данные которые нужны для нового голоса
+        postVote.setTime(new Date());
+        postVote.setPostId(postId);
+        postVote.setUserId(userId);
+        postVote.setValue(vote);
+
+        postVoteRepository.save(postVote);
+
         return new LikeDislikeResponse(true);
     }
 
@@ -193,7 +225,54 @@ public class PostServiceImpl implements PostService {
         );
     }
 
-    private int addViewToPost(int currentView) {
-        return currentView + 1;
+    private Map<String, String> addOrChangePost(Post post, AddOrEditPostRequest addOrEditPostRequest) {
+        User user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
+        Map<String, String> errors = new HashMap<>();
+        if (addOrEditPostRequest.getTitle().isBlank() || addOrEditPostRequest.getTitle().length() < 3) {
+            errors.put("title", "Заголовок пустой или не установлен");
+        }
+        if (addOrEditPostRequest.getText().isBlank() || addOrEditPostRequest.getText().length() < 50) {
+            errors.put("text", "Текст поста пустой или не установлен");
+        }
+        if (errors.isEmpty()) {
+            post.setIsActive(addOrEditPostRequest.getActive());
+
+            //Проверка, если текущий юзер - не модератор, то при изменении поста его статус будет меняться на NEW
+            if(user.getIsModerator() == 0) {
+                post.setModStatus(ModerationStatus.NEW);
+            }
+            //Проверка времени, если стоит раньше чем текущее, ставим текущее
+            if (Instant.ofEpochSecond(addOrEditPostRequest.getTimestamp()).getEpochSecond() < Instant.now().getEpochSecond()) {
+                post.setInstant(Instant.ofEpochSecond(Instant.now().getEpochSecond()));
+            } else {
+                post.setInstant(Instant.ofEpochSecond(addOrEditPostRequest.getTimestamp()));
+            }
+
+            post.setText(addOrEditPostRequest.getText());
+            post.setTitle(addOrEditPostRequest.getTitle());
+            post.setUserId(user);
+
+            //Создание и добавление тегов
+            List<Tag> tagList = new ArrayList<>();
+            for (String name : addOrEditPostRequest.getTags()) {
+                Tag tag = new Tag();
+                tag.setName(name);
+                tagList.add(tag);
+            }
+            post.setTagList(tagList);
+
+            postRepository.save(post);
+        }
+        return errors;
+    }
+
+    private int addViewToPost(int currentView, Post post) {
+        User user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
+        byte isModerator = user.getIsModerator();
+        boolean isMine = user.getId() == post.getUserId().getId();
+        if (isModerator == 1 || isMine) {
+            return currentView;
+        }
+        return ++currentView;
     }
 }

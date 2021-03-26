@@ -23,7 +23,7 @@ public class Post {
     @OneToMany(mappedBy = "parentId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostComments> parentComments;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "tag2post",
                 joinColumns = {@JoinColumn(name = "post_id")},
                 inverseJoinColumns = {@JoinColumn(name = "tag_id")})
@@ -33,7 +33,7 @@ public class Post {
     private List<PostVote> postVoteList;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     //ID поста NOT_NULL AUTO_INCREMENT
     private int id;
 

@@ -12,8 +12,10 @@ create table global_settings(
     value varchar(255) not null,
     primary key (id));
 
+
 create table hibernate_sequence(
     next_val bigint not null);
+
 
 create table post_comments(
     id integer not null auto_increment,
@@ -52,7 +54,7 @@ create table tag2post(
 
 create table tags(
     id integer not null auto_increment,
-    name varchar(255),
+    name varchar(255) UNIQUE,
     primary key (id));
 
 create table users(

@@ -34,4 +34,9 @@ public class DefaultController {
         String path = "/" + firstDir + "/" + secondDir + "/" + thirdDir + "/" + fileName;
         return generalService.getImage(path);
     }
+
+    @GetMapping("/upload/photo/{fileName}")
+    public @ResponseBody byte[] getUserAvatar(@PathVariable("fileName") String fileName){
+        return generalService.getImage("/photo/" + fileName);
+    }
 }

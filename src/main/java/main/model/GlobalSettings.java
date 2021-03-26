@@ -16,7 +16,7 @@ import javax.persistence.*;
 public class GlobalSettings {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     //ID настройки NOT_NULL AUTO_INCREMENT
     private int id;
 

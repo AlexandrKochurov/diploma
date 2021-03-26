@@ -17,7 +17,7 @@ import java.util.Date;
 public class PostVote {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     //ID лайка/дизлайка NOT_NULL AUTO_INCREMENT
     private int id;
 

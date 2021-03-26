@@ -20,4 +20,9 @@ public interface UserRepository extends CrudRepository<User, Integer> {
 
 
     Optional<User> findByEmail(String email);
+
+    @Transactional
+    @Modifying
+    @Query(value = "update users set code = :code where email = :email", nativeQuery = true)
+    void addCodeToUser(@Param("code") String code, @Param("email") String email);
 }

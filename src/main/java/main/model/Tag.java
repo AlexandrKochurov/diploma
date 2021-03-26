@@ -17,13 +17,13 @@ import java.util.List;
 public class Tag {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     //ID тэга NOT_NULL AUTO_INCREMENT
     private int id;
 
     //Имя тега VARCHAR NOT_NULL
     private String name;
 
-    @ManyToMany(mappedBy = "tagList")
+    @ManyToMany(mappedBy = "tagList", cascade = CascadeType.ALL)
     private List<Post> posts;
 }

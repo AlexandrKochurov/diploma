@@ -4,11 +4,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import main.api.request.AddOrEditPostRequest;
 import main.api.request.LikeAndDislikeRequest;
 import main.api.response.LikeDislikeResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
-import main.model.Post;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +22,9 @@ import main.service.impl.PostServiceImpl;
 public class ApiPostController {
 
     private final PostServiceImpl postServiceImpl;
+
+    private final byte LIKE = 1;
+    private final byte DISLIKE = -1;
 
     @Autowired
     public ApiPostController(PostServiceImpl postServiceImpl) {
@@ -89,14 +92,12 @@ public class ApiPostController {
     @ApiOperation(value = "Список моих постов", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Posts either found or not :)")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<?> myPosts(
+    public ResponseEntity<PostsListResponse> myPosts(
             @RequestParam(name = "offset", required = false) int offset,
             @RequestParam(name = "limit", required = false) int limit,
-            @RequestParam(name = "id", required = false) int id,
-            @RequestParam(name = "active", required = false) int active,
             @RequestParam(name = "status", required = false) String status
     ) {
-        return ResponseEntity.ok(postServiceImpl.myPosts(offset, limit, id, active, status));
+        return ResponseEntity.ok(postServiceImpl.myPosts(offset, limit, status));
     }
 
     @GetMapping(value = "/{id}")
@@ -117,9 +118,8 @@ public class ApiPostController {
             @ApiResponse(code = 404, message = "Пост не найден")
     })
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<?> addPost(@RequestBody Post post) {
-        postServiceImpl.addPost(post);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> addPost(@RequestBody AddOrEditPostRequest addPostRequest) {
+        return ResponseEntity.ok(postServiceImpl.addPost(addPostRequest));
     }
 
     @PutMapping(value = "/{id}")
@@ -130,10 +130,10 @@ public class ApiPostController {
     })
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<?> editPost(
-            @RequestBody Post post,
-            @RequestParam(name = "id", required = false) Integer id
+            @RequestBody AddOrEditPostRequest editPostRequest,
+            @PathVariable(name = "id", required = false) int id
     ) throws Exception {
-        postServiceImpl.editPost(id, post);
+        postServiceImpl.editPost(id, editPostRequest);
         return ResponseEntity.ok().build();
     }
 
@@ -142,7 +142,7 @@ public class ApiPostController {
     @ApiResponse(code = 200, message = "Лайк поставлен")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<LikeDislikeResponse> like(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
-        return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), true));
+        return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), LIKE));
     }
 
     @PostMapping(value = "/dislike")
@@ -150,6 +150,6 @@ public class ApiPostController {
     @ApiResponse(code = 200, message = "Дизлайк поставлен")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<LikeDislikeResponse> dislike(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
-        return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), false));
+        return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), DISLIKE));
     }
 }

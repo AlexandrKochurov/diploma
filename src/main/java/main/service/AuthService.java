@@ -1,10 +1,9 @@
 package main.service;
 
 import main.api.request.LoginRequest;
-import main.api.response.CaptchaResponse;
-import main.api.response.LoginResponse;
-import main.api.response.LogoutResponse;
-import main.api.response.RegisterResponse;
+import main.api.request.PassChangeRequest;
+import main.api.request.PassRecoverRequest;
+import main.api.response.*;
 import main.model.User;
 
 import java.io.IOException;
@@ -15,9 +14,9 @@ public interface AuthService {
 
      LoginResponse checkAuth(Principal principal);
 
-     void passRecover(String email);
+     PassRecoverResponse passRecover(PassRecoverRequest passRecoverRequest);
 
-     void passChange(String code, String captcha);
+     PassChangeResponse passChange(PassChangeRequest passChangeRequest);
 
      RegisterResponse registration(String email, String password, String name, String code, String secretCode);
 

@@ -79,7 +79,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
 
     @Query(value = "select * from posts " +
             "where posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() " +
-            "and posts.title like :query " +
+            "and posts.title like %:query% " +
             "order by posts.instant desc",
             nativeQuery = true)
     List<Post> searchPosts(Pageable pageable, @Param("query") String query);
@@ -112,6 +112,10 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
     @Query(value = "select * from posts where id = :post_id and posts.moderator_status='ACCEPTED' and posts.is_active=1 and posts.instant<=now()",
             nativeQuery = true)
     Optional<Post> postById(@Param("post_id") int postId);
+
+    @Query(value = "select * from posts where id = :post_id and posts.is_active=1",
+            nativeQuery = true)
+    Optional<Post> postByIdForModeration(@Param("post_id") int postId);
 
     @Query(value = "select year(posts.instant) as year, date_format(posts.instant, '%Y-%m-%d') as date, count(*) as amount from posts " +
             "where year(posts.instant)= :year and posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() " +

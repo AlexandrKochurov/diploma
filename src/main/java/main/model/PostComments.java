@@ -17,7 +17,7 @@ import java.time.Instant;
 public class PostComments {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     //ID комментария NOT_NULL AUTO_INCREMENT
     private int id;
 

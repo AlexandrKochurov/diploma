@@ -1,10 +1,7 @@
 package main.service;
 
-import main.api.response.CommentResponse;
-import main.api.response.LikeDislikeResponse;
-import main.api.response.PostByIdResponse;
-import main.api.response.PostsListResponse;
-import main.model.Post;
+import main.api.request.AddOrEditPostRequest;
+import main.api.response.*;
 
 public interface PostService {
     //Метод возвращающий все посты
@@ -23,19 +20,19 @@ public interface PostService {
     PostsListResponse postsForModeration(int offset, int limit, String status);
 
     //Список моих постов
-    PostsListResponse myPosts(int offset, int limit, int usetId, int active, String status);
+    PostsListResponse myPosts(int offset, int limit, String status);
 
     //Метод возвращающий конкретный пост, по ID
     PostByIdResponse postById(int id) throws Exception;
 
     //Метод добавления поста
-    void addPost(Post post);
+    AddOrEditPostResponse addPost(AddOrEditPostRequest addPostRequest);
 
     //Метод редактирования поста
-    void editPost(int id, Post post) throws Exception;
+    AddOrEditPostResponse editPost(int id, AddOrEditPostRequest editPostRequest) throws Exception;
 
     //Метод удаления поста
     void deletePost(int id) throws Exception;
 
-    LikeDislikeResponse setLikeOrDislike(int postId, boolean separator);
+    LikeDislikeResponse setLikeOrDislike(int postId, byte vote);
 }

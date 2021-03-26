@@ -18,7 +18,7 @@ import java.util.List;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     //ID пользователя NOT_NULL AUTO_INCREMENT
     private int id;
 

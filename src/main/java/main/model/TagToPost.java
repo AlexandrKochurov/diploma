@@ -16,7 +16,7 @@ import javax.persistence.*;
 public class TagToPost {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     //ID связи NOT_NULL AUTO_INCREMENT
     private int id;
 

@@ -2,6 +2,7 @@ package main.service;
 
 import main.api.request.ChangeProfileRequest;
 import main.api.request.ImageUploadRequest;
+import main.api.request.PostModerationRequest;
 import main.api.request.SettingsRequest;
 import main.api.response.*;
 import main.model.User;
@@ -18,7 +19,7 @@ public interface GeneralService {
 
     CalendarResponse calendar(Integer year);
 
-    ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest);
+    ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) throws IOException;
 
     Map<String, Integer> myStats(User user);
 
@@ -29,4 +30,6 @@ public interface GeneralService {
     CommentResponse comment(int parentId, int postId, String text);
 
     SettingsResponse getGlobalSettings();
+
+    ModeratorDecisionResponse changeModeratorDecision(PostModerationRequest request);
 }

@@ -1,19 +1,20 @@
 package main.api.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Component
-public class ChangeProfileRequest {
-    private MultipartFile photo;
-    private String name;
-    private String email;
+public class PassChangeRequest {
+    private String code;
     private String password;
-    private int removePhoto;
+    private String captcha;
+
+    @JsonProperty("captcha_secret")
+    private String capthcaSecret;
 }

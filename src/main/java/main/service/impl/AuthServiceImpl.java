@@ -3,9 +3,13 @@ package main.service.impl;
 import com.github.cage.Cage;
 import com.github.cage.GCage;
 import main.api.request.LoginRequest;
+import main.api.request.PassChangeRequest;
+import main.api.request.PassRecoverRequest;
 import main.api.response.*;
+import main.model.User;
 import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -54,13 +58,20 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void passRecover(String email) {
-
+    public PassRecoverResponse passRecover(PassRecoverRequest passRecoverRequest) {
+        if(userRepository.findByEmail(passRecoverRequest.getEmail()).isPresent()){
+            BCryptPasswordEncoder passenc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
+            String hash = passenc.encode(secretCodeGenerator());
+            userRepository.addCodeToUser(hash, passRecoverRequest.getEmail());
+            return new PassRecoverResponse(true);
+        }
+        return new PassRecoverResponse(false);
     }
 
     @Override
-    public void passChange(String code, String captcha) {
-
+    public PassChangeResponse passChange(PassChangeRequest passChangeRequest) {
+        Map<String, String> errors = new HashMap<>();
+        return new PassChangeResponse();
     }
 
     @Override
