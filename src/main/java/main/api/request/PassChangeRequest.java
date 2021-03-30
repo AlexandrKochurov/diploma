@@ -16,5 +16,5 @@ public class PassChangeRequest {
     private String captcha;
 
     @JsonProperty("captcha_secret")
-    private String capthcaSecret;
+    private String captchaSecret;
 }

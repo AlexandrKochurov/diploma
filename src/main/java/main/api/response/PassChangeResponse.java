@@ -14,4 +14,8 @@ import java.util.Map;
 public class PassChangeResponse {
     private boolean result;
     private Map<String, String> errors;
+
+    public PassChangeResponse(boolean result) {
+        this.result = result;
+    }
 }

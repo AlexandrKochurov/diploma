@@ -11,15 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface CaptchaCodesRepository extends CrudRepository<CaptchaCodes, Integer> {
 
+    int countByCodeAndSecretCode(String code, String secretCode);
+
     @Transactional
     @Modifying
     @Query(value = "insert into captcha_codes(code, secret_code, time) values (:code, :secret_code, now())",
-    nativeQuery = true)
+            nativeQuery = true)
     void addNewCaptcha(@Param("code") String code, @Param("secret_code") String secretCode);
 
     @Transactional
     @Modifying
     @Query(value = "delete from captcha_codes where timestampdiff(hour, captcha_codes.time, now()) >= 1",
-    nativeQuery = true)
+            nativeQuery = true)
     void checkOldCaptcha();
 }

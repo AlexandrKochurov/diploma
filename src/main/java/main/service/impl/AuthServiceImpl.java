@@ -6,10 +6,9 @@ import main.api.request.LoginRequest;
 import main.api.request.PassChangeRequest;
 import main.api.request.PassRecoverRequest;
 import main.api.response.*;
-import main.model.User;
 import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.ManagedMap;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,15 +32,19 @@ public class AuthServiceImpl implements AuthService {
     private final CaptchaCodesRepository captchaCodesRepository;
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
     private final int PICTURE_WIDTH = 100;
     private final int PICTURE_HEIGHT = 35;
-    private static String secret = secretCodeGenerator();
+
+    @Value("${blog.minPasswordLength}")
+    private int minPassLength;
 
     @Autowired
-    public AuthServiceImpl(CaptchaCodesRepository captchaCodesRepository, UserRepository userRepository, AuthenticationManager authenticationManager) {
+    public AuthServiceImpl(CaptchaCodesRepository captchaCodesRepository, UserRepository userRepository, AuthenticationManager authenticationManager, EmailService emailService) {
         this.captchaCodesRepository = captchaCodesRepository;
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
+        this.emailService = emailService;
     }
 
     @Override
@@ -60,8 +63,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public PassRecoverResponse passRecover(PassRecoverRequest passRecoverRequest) {
         if(userRepository.findByEmail(passRecoverRequest.getEmail()).isPresent()){
-            BCryptPasswordEncoder passenc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
-            String hash = passenc.encode(secretCodeGenerator());
+            String hash = secretCodeGenerator();
+            emailService.sendPassRecoveryHash(passRecoverRequest.getEmail(), "Password recovery", "http://localhost:8080/login/change-password/" + hash);
             userRepository.addCodeToUser(hash, passRecoverRequest.getEmail());
             return new PassRecoverResponse(true);
         }
@@ -71,13 +74,24 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public PassChangeResponse passChange(PassChangeRequest passChangeRequest) {
         Map<String, String> errors = new HashMap<>();
-        return new PassChangeResponse();
+        if(captchaCodesRepository.countByCodeAndSecretCode(passChangeRequest.getCaptcha(), passChangeRequest.getCaptchaSecret()) == 0){
+            errors.put("captcha", "Капча введена неверно");
+        }
+        if(passChangeRequest.getPassword().length() < minPassLength){
+            errors.put("password", "Пароль должен быть не менее 6 символов");
+        }
+        if(!errors.isEmpty()){
+            return new PassChangeResponse(false, errors);
+        }
+        BCryptPasswordEncoder passEnc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
+        userRepository.changePass(passEnc.encode(passChangeRequest.getPassword()), passChangeRequest.getCode());
+        return new PassChangeResponse(true);
     }
 
     @Override
     public RegisterResponse registration(String email, String password, String name, String code, String secretCode) {
         Map<String, String> errors = new HashMap<>();
-        if (!secret.equals(secretCode)) {
+        if (captchaCodesRepository.countByCodeAndSecretCode(code, secretCode) == 0) {
             errors.put("captcha", "Код с картинки введен не верно");
         }
         if (!email.matches("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")) {
@@ -86,14 +100,14 @@ public class AuthServiceImpl implements AuthService {
         if (!name.matches("\\D+")) {
             errors.put("name", "Имя указано неверно");
         }
-        if ((password.length() < 6)) {
+        if ((password.length() < minPassLength)) {
             errors.put("password", "Пароль должен быть не менее 6 символов");
         }
         if (!errors.isEmpty()) {
             return new RegisterResponse(false, errors);
         }
-        BCryptPasswordEncoder passenc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
-        userRepository.addNewUser(code, email, name, passenc.encode(password));
+        BCryptPasswordEncoder passEnc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
+        userRepository.addNewUser(email, name, passEnc.encode(password));
         return new RegisterResponse(true);
     }
 
@@ -103,9 +117,10 @@ public class AuthServiceImpl implements AuthService {
         String code = cage.getTokenGenerator().next();
         BufferedImage buimg = Scalr.resize(cage.drawImage(code), Scalr.Method.ULTRA_QUALITY, PICTURE_WIDTH, PICTURE_HEIGHT);
         String image = "data:image/png;base64, " + Base64.getEncoder().encodeToString(bufImgToBytes(buimg));
-        captchaCodesRepository.addNewCaptcha(code, secret);
+        String secretCode = secretCodeGenerator();
+        captchaCodesRepository.addNewCaptcha(code, secretCode);
         captchaCodesRepository.checkOldCaptcha();
-        return new CaptchaResponse(secret, image);
+        return new CaptchaResponse(secretCode, image);
     }
 
     @Override

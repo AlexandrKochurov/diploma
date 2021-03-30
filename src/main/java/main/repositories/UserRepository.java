@@ -14,9 +14,9 @@ import java.util.Optional;
 public interface UserRepository extends CrudRepository<User, Integer> {
     @Transactional
     @Modifying
-    @Query(value = "insert into users(code, email, is_moderator, name, password, reg_time) values (:code, :email, 0, :name, :password, now())",
+    @Query(value = "insert into users(email, is_moderator, name, password, reg_time) values (:email, 0, :name, :password, now())",
             nativeQuery = true)
-    void addNewUser(@Param("code") String code, @Param("email") String email, @Param("name") String name, @Param("password") String password);
+    void addNewUser(@Param("email") String email, @Param("name") String name, @Param("password") String password);
 
 
     Optional<User> findByEmail(String email);
@@ -25,4 +25,9 @@ public interface UserRepository extends CrudRepository<User, Integer> {
     @Modifying
     @Query(value = "update users set code = :code where email = :email", nativeQuery = true)
     void addCodeToUser(@Param("code") String code, @Param("email") String email);
+
+    @Transactional
+    @Modifying
+    @Query(value = "update users set password = :password where code = :code", nativeQuery = true)
+    void changePass(@Param("password") String password, @Param("code") String code);
 }
