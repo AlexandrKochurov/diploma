@@ -44,7 +44,6 @@ public class GeneralServiceImpl implements GeneralService {
     private final PostVoteRepository postVoteRepository;
     private final PostCommentsRepository postCommentsRepository;
     private final UserRepository userRepository;
-    private final AuthenticationManager authenticationManager;
 
     private final int PICTURE_WIDTH = 36;
     private final int PICTURE_HEIGHT = 36;
@@ -56,14 +55,13 @@ public class GeneralServiceImpl implements GeneralService {
     private String uploadPath;
 
     @Autowired
-    public GeneralServiceImpl(TagRepository tagRepository, PostRepository postRepository, GlobalSettingsRepository globalSettingsRepository, PostVoteRepository postVoteRepository, PostCommentsRepository postCommentsRepository, UserRepository userRepository, AuthenticationManager authenticationManager) {
+    public GeneralServiceImpl(TagRepository tagRepository, PostRepository postRepository, GlobalSettingsRepository globalSettingsRepository, PostVoteRepository postVoteRepository, PostCommentsRepository postCommentsRepository, UserRepository userRepository) {
         this.tagRepository = tagRepository;
         this.postRepository = postRepository;
         this.globalSettingsRepository = globalSettingsRepository;
         this.postVoteRepository = postVoteRepository;
         this.postCommentsRepository = postCommentsRepository;
         this.userRepository = userRepository;
-        this.authenticationManager = authenticationManager;
     }
 
     @Override
@@ -111,8 +109,13 @@ public class GeneralServiceImpl implements GeneralService {
     @Override
     public ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) throws IOException {
         Map<String, String> errors = new HashMap<>();
-        if (!changeProfileRequest.getEmail().matches("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$") || userRepository.findByEmail(changeProfileRequest.getEmail()).isPresent()) {
-            errors.put("email", "Неверно введен email, либо email уже существует");
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        //Проверка осуществляется только если email менялся.
+        if(!currentUserEmail.equals(changeProfileRequest.getEmail())) {
+            if (!changeProfileRequest.getEmail().matches("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")
+            || userRepository.findByEmail(changeProfileRequest.getEmail()).isPresent()) {
+                errors.put("email", "Неверно введен email или email уже существует");
+            }
         }
         if (changeProfileRequest.getPhoto() != null) {
             if (changeProfileRequest.getPhoto().getSize() > maxFileSize) {
@@ -133,8 +136,10 @@ public class GeneralServiceImpl implements GeneralService {
             return new ChangeProfileResponse(false, errors);
         }
 
-        Path path = Path.of("C:/Diploma/src/main/resources/upload/photo/" + changeProfileRequest.getPhoto().getOriginalFilename());
-        if (!changeProfileRequest.getPhoto().isEmpty()) {
+        Optional<User> user = userRepository.findByEmail(currentUserEmail);
+
+        if (changeProfileRequest.getPhoto() != null) {
+            Path path = Path.of("C:/Diploma/src/main/resources/upload/photo/" + changeProfileRequest.getPhoto().getOriginalFilename());
             ByteArrayInputStream bais = new ByteArrayInputStream(changeProfileRequest.getPhoto().getBytes());
             BufferedImage bufferedImage = ImageIO.read(bais);
             File file = new File(path.toString());
@@ -142,9 +147,10 @@ public class GeneralServiceImpl implements GeneralService {
                 file.mkdirs();
             }
             ImageIO.write(Scalr.resize(bufferedImage, Scalr.Method.ULTRA_QUALITY, PICTURE_WIDTH, PICTURE_HEIGHT), "jpg", file);
+
+            user.get().setPhoto(path.toString().substring(29).replace("\\", "/"));
         }
-        org.springframework.security.core.userdetails.User currentUser = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Optional<User> user = Optional.ofNullable(userRepository.findByEmail(currentUser.getUsername()).orElseThrow());
+
         if (!changeProfileRequest.getEmail().isBlank()) {
             user.get().setEmail(changeProfileRequest.getEmail());
         }
@@ -155,12 +161,8 @@ public class GeneralServiceImpl implements GeneralService {
         if (!changeProfileRequest.getName().isBlank()) {
             user.get().setName(changeProfileRequest.getName());
         }
-        if (!changeProfileRequest.getPhoto().isEmpty()) {
-            user.get().setPhoto(path.toString().substring(29).replace("\\", "/"));
-        }
         if (changeProfileRequest.getRemovePhoto() == 1) {
-            File file = new File(path.toString());
-            file.delete();
+            user.get().setPhoto(null);
         }
         userRepository.save(user.get());
         return new ChangeProfileResponse(true);

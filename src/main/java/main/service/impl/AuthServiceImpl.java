@@ -131,6 +131,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
+        if(userRepository.findByEmail(loginRequest.getEmail()).isEmpty()){
+            return new LoginResponse(false);
+        }
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 loginRequest.getEmail(),
                 loginRequest.getPassword()
@@ -166,10 +169,6 @@ public class AuthServiceImpl implements AuthService {
         userLoginResponse.setEmail(currentUser.getEmail());
         userLoginResponse.setModeration(currentUser.getIsModerator() == 1);
 
-        LoginResponse loginResponse = new LoginResponse();
-        loginResponse.setResult(true);
-        loginResponse.setUserLoginResponse(userLoginResponse);
-
-        return loginResponse;
+        return new LoginResponse(true, userLoginResponse);
     }
 }

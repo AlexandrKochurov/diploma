@@ -79,7 +79,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
 
     @Query(value = "select * from posts " +
             "where posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() " +
-            "and posts.title like %:query% " +
+            "and (posts.title like %:query% or posts.text like %:query%) " +
             "order by posts.instant desc",
             nativeQuery = true)
     List<Post> searchPosts(Pageable pageable, @Param("query") String query);

@@ -111,8 +111,8 @@ public class ApiGeneralController {
     public ResponseEntity<?> updateProfileWithPhoto(
             @RequestParam("photo") MultipartFile photo, // это картинка
             @RequestParam("removePhoto") int removePhoto,
-            @RequestParam("name") String name,
-            @RequestParam("email") String email,
+            @RequestParam(name = "name") String name,
+            @RequestParam(name = "email") String email,
             @RequestParam(name = "password", required = false) String password
     ) throws IOException {
         ChangeProfileRequest changeProfileRequest = new ChangeProfileRequest(photo, name, email, password, removePhoto);

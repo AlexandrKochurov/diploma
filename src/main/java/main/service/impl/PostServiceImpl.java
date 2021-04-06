@@ -9,7 +9,6 @@ import main.exceptions.NotFoundPostByIdException;
 import main.exceptions.NotFoundPostsException;
 import main.model.*;
 import main.repositories.PostVoteRepository;
-import main.repositories.TagRepository;
 import main.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -32,18 +31,15 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final PostVoteRepository postVoteRepository;
     private final UserRepository userRepository;
-    private final TagRepository tagRepository;
-    private final byte LIKE = 1;
-    private final byte DISLIKE = -1;
+    private final String NOTAUTHUSER = "anonymousUser";
 
     private final int ANNOUNCE_LENGTH = 50;
 
     @Autowired
-    public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository, TagRepository tagRepository) {
+    public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository) {
         this.postRepository = postRepository;
         this.postVoteRepository = postVoteRepository;
         this.userRepository = userRepository;
-        this.tagRepository = tagRepository;
     }
 
     @Override
@@ -120,8 +116,10 @@ public class PostServiceImpl implements PostService {
     public PostByIdResponse postById(int id) {
         Post post = postRepository.postById(id)
                 .orElseThrow(NotFoundPostByIdException::new);
-        post.setViewCount(addViewToPost(post.getViewCount(), post));
-        postRepository.save(post);
+        if(!SecurityContextHolder.getContext().getAuthentication().getName().equalsIgnoreCase(NOTAUTHUSER)){
+            post.setViewCount(addViewToPost(post.getViewCount(), post));
+            postRepository.save(post);
+        }
         return getPostByIdResponse(post);
     }
 
@@ -154,6 +152,10 @@ public class PostServiceImpl implements PostService {
     }
 
     public LikeDislikeResponse setLikeOrDislike(int postId, byte vote) {
+        if(SecurityContextHolder.getContext().getAuthentication().getName().equalsIgnoreCase(NOTAUTHUSER)){
+            return new LikeDislikeResponse(false);
+        }
+
         Post post = postRepository.postById(postId).orElseThrow(NotFoundPostByIdException::new);
         int userId = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get().getId();
         PostVote postVote = post.getPostVoteList() // если есть голос, получаем его, если нет голоса - создаем новый
