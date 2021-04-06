@@ -18,7 +18,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -67,7 +66,7 @@ public class GeneralServiceImpl implements GeneralService {
     @Override
     public String imageUpload(MultipartFile multipartFile) throws IOException {
         String extension = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
-        Path path = Path.of("C:/Diploma/src/main/resources/upload/" + createRandomPath() + multipartFile.getOriginalFilename());
+        Path path = Path.of(uploadPath + createRandomPath() + multipartFile.getOriginalFilename());
         Map<String, String> errors = new HashMap<>();
         assert extension != null;
         if (!extension.equalsIgnoreCase("jpg") && !extension.equalsIgnoreCase("png")) {
@@ -80,7 +79,7 @@ public class GeneralServiceImpl implements GeneralService {
             File file = new File(path.toString());
             file.mkdirs();
             multipartFile.transferTo(file);
-            return file.getPath().substring(29).replace("\\", "/");
+            return file.getPath().replace("\\", "/");
         } else {
             throw new BadImageException(false, errors);
         }
@@ -139,7 +138,7 @@ public class GeneralServiceImpl implements GeneralService {
         Optional<User> user = userRepository.findByEmail(currentUserEmail);
 
         if (changeProfileRequest.getPhoto() != null) {
-            Path path = Path.of("C:/Diploma/src/main/resources/upload/photo/" + changeProfileRequest.getPhoto().getOriginalFilename());
+            Path path = Path.of(uploadPath + "photo/" + changeProfileRequest.getPhoto().getOriginalFilename());
             ByteArrayInputStream bais = new ByteArrayInputStream(changeProfileRequest.getPhoto().getBytes());
             BufferedImage bufferedImage = ImageIO.read(bais);
             File file = new File(path.toString());
@@ -148,13 +147,13 @@ public class GeneralServiceImpl implements GeneralService {
             }
             ImageIO.write(Scalr.resize(bufferedImage, Scalr.Method.ULTRA_QUALITY, PICTURE_WIDTH, PICTURE_HEIGHT), "jpg", file);
 
-            user.get().setPhoto(path.toString().substring(29).replace("\\", "/"));
+            user.get().setPhoto(path.toString().replace("\\", "/"));
         }
 
         if (!changeProfileRequest.getEmail().isBlank()) {
             user.get().setEmail(changeProfileRequest.getEmail());
         }
-        if (!changeProfileRequest.getPassword().isBlank()) {
+        if (changeProfileRequest.getPassword() != null) {
             BCryptPasswordEncoder passenc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
             user.get().setPassword(passenc.encode(changeProfileRequest.getPassword()));
         }
@@ -277,16 +276,14 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     public byte[] getImage(String path) {
-        File file = new File("C:/Diploma/src/main/resources" + uploadPath + path);
+        File file = new File(uploadPath + path);
         byte[] image = new byte[0];
-        if (file.exists()) {
-            try (FileInputStream is = new FileInputStream(file)) {
+        try (FileInputStream is = new FileInputStream(file.getPath().replace("\\", "/"))) {
                 image = is.readAllBytes();
             } catch (IOException e) {
                 e.printStackTrace();
                 image = new byte[0];
             }
-        }
         return image;
     }
 }
