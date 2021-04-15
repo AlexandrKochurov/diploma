@@ -21,9 +21,9 @@ public interface GeneralService {
 
     ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) throws IOException;
 
-    Map<String, Integer> myStats(User user);
+    StatisticResponse myStats();
 
-    StatisticResponse allStats(User user);
+    StatisticResponse allStats();
 
     void setGlobalSettings(SettingsRequest settingsRequest);
 

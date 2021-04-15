@@ -109,7 +109,7 @@ public class PostServiceImpl implements PostService {
                 moderatorStatus = "ACCEPTED";
                 break;
         }
-        return new PostsListResponse(postRepository.countMyPosts(userId, moderatorStatus, isActive), getPostsDTO(postRepository.myPosts(pageable, userId, moderatorStatus, isActive)));
+        return new PostsListResponse(postRepository.countMyPostsByStatus(userId, moderatorStatus, isActive), getPostsDTO(postRepository.myPosts(pageable, userId, moderatorStatus, isActive)));
     }
 
     @Override
@@ -187,7 +187,7 @@ public class PostServiceImpl implements PostService {
                                         post.getId(),
                                         post.getInstant().getEpochSecond(),
                                         post.getTitle(),
-                                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)),
+                                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)).replaceAll("\\<.*?>",""),
                                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
                                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
                                         post.getPostCommentsList().size(),

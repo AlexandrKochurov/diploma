@@ -19,6 +19,7 @@ import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,20 +67,24 @@ public class GeneralServiceImpl implements GeneralService {
     @Override
     public String imageUpload(MultipartFile multipartFile) throws IOException {
         String extension = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
-        Path path = Path.of(uploadPath + createRandomPath() + multipartFile.getOriginalFilename());
+        Path dirPath = Path.of(uploadPath + createRandomPath());
+        Path pathToFile = dirPath.resolve(multipartFile.getOriginalFilename());
         Map<String, String> errors = new HashMap<>();
-        assert extension != null;
-        if (!extension.equalsIgnoreCase("jpg") && !extension.equalsIgnoreCase("png")) {
+        //Проверка фото
+        if (extension != null && !extension.equalsIgnoreCase("jpg") && !extension.equalsIgnoreCase("png")) {
             errors.put("imageExtension", "Неверное расширение файла");
         }
         if (multipartFile.getSize() > maxFileSize) {
             errors.put("image", "Размер файла превышает допустимый размер");
         }
         if (errors.isEmpty()) {
-            File file = new File(path.toString());
-            file.mkdirs();
+            //Создаем файл
+            File file = new File(pathToFile.toAbsolutePath().toString());
+            //Создаем директорию
+            new File(dirPath.toString()).mkdirs();
+            //Пишем фото в свежесозданный файл
             multipartFile.transferTo(file);
-            return file.getPath().replace("\\", "/");
+            return "/" + pathToFile.toString().replace("\\", "/");
         } else {
             throw new BadImageException(false, errors);
         }
@@ -128,7 +133,7 @@ public class GeneralServiceImpl implements GeneralService {
         }
         if (changeProfileRequest.getName() != null) {
             if (!changeProfileRequest.getName().matches("\\D+")) {
-                errors.put("name", "Указано неверное имя");
+                errors.put("name", "Имя не должно содержать других символов кроме букв");
             }
         }
         if (!errors.isEmpty()) {
@@ -147,7 +152,7 @@ public class GeneralServiceImpl implements GeneralService {
             }
             ImageIO.write(Scalr.resize(bufferedImage, Scalr.Method.ULTRA_QUALITY, PICTURE_WIDTH, PICTURE_HEIGHT), "jpg", file);
 
-            user.get().setPhoto(path.toString().replace("\\", "/"));
+            user.get().setPhoto("/" + file.toString().replace("\\", "/"));
         }
 
         if (!changeProfileRequest.getEmail().isBlank()) {
@@ -168,13 +173,21 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public Map<String, Integer> myStats(User user) {
-        return null;
+    public StatisticResponse myStats() {
+        int userId = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get().getId();
+        return new StatisticResponse(
+                postRepository.countMyPosts(userId),
+                postVoteRepository.countLikesById(userId),
+                postVoteRepository.countDislikesById(userId),
+                postRepository.viewCountSumById(userId),
+                postRepository.getFirstPublicationById(userId).getEpochSecond()
+        );
     }
 
     @Override
-    public StatisticResponse allStats(User user) {
+    public StatisticResponse allStats() {
         boolean statIsPub = globalSettingsRepository.getSettingsValueByCode(GlobalSettingsName.STATISTICS_IS_PUBLIC.toString());
+        User user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
         if (user.getIsModerator() != 1 && !statIsPub) {
             return new StatisticResponse();
         }
@@ -273,17 +286,5 @@ public class GeneralServiceImpl implements GeneralService {
             if (i == 1 || i == 3 || i == 5) stringBuilder.append("/");
         }
         return stringBuilder.toString();
-    }
-
-    public byte[] getImage(String path) {
-        File file = new File(uploadPath + path);
-        byte[] image = new byte[0];
-        try (FileInputStream is = new FileInputStream(file.getPath().replace("\\", "/"))) {
-                image = is.readAllBytes();
-            } catch (IOException e) {
-                e.printStackTrace();
-                image = new byte[0];
-            }
-        return image;
     }
 }

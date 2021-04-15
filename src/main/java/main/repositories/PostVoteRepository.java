@@ -17,4 +17,12 @@ public interface PostVoteRepository extends CrudRepository<PostVote, Integer> {
     @Query(value = "select count(*) from post_votes where value = -1",
             nativeQuery = true)
     int countAllDislikes();
+
+    @Query(value = "select count(*) from post_votes where value = 1 and user_id = :id",
+    nativeQuery = true)
+    int countLikesById(int id);
+
+    @Query(value = "select count(*) from post_votes where value = 1 and user_id = :id",
+    nativeQuery = true)
+    int countDislikesById(int id);
 }

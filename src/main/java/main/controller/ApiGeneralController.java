@@ -82,8 +82,19 @@ public class ApiGeneralController {
             @ApiResponse(code = 401, message = "Статистика заблокирована")
     })
 //    @PreAuthorize("hasAuthority('user:moderate')")
-    public ResponseEntity<StatisticResponse> statistics(User user) {
-        return ResponseEntity.ok(generalServiceImpl.allStats(user));
+    public ResponseEntity<StatisticResponse> allStatistics() {
+        return ResponseEntity.ok(generalServiceImpl.allStats());
+    }
+
+    @GetMapping("statistics/my")
+    @ApiOperation(value = "Статистика по всему блогу", response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Статистика выведена"),
+            @ApiResponse(code = 401, message = "Статистика заблокирована")
+    })
+//    @PreAuthorize("hasAuthority('user:moderate')")
+    public ResponseEntity<StatisticResponse> myStatistics() {
+        return ResponseEntity.ok(generalServiceImpl.myStats());
     }
 
     @PostMapping(value = "comment")

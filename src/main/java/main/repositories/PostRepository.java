@@ -46,10 +46,14 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
             nativeQuery = true)
     int countPostsForModeration(@Param("status")String status);
 
+    @Query(value = "select count(*) from posts where posts.user_id=:user_id",
+            nativeQuery = true)
+    int countMyPosts(@Param("user_id") int userId);
+
     @Query(value = "select count(*) from posts " +
             "where posts.user_id=:user_id and posts.moderator_status like :status and posts.is_active=:active",
             nativeQuery = true)
-    int countMyPosts(@Param("user_id") int userId, @Param("status") String status, @Param("active") int active);
+    int countMyPostsByStatus(@Param("user_id") int userId, @Param("status") String status, @Param("active") int active);
 
     @Query(value = "select * from posts " +
             "where posts.is_active=1 and posts.moderator_status='ACCEPTED' and posts.instant<=now() " +
@@ -109,7 +113,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
             nativeQuery = true)
     List<Post> myPosts(Pageable pageable, @Param("user_id") int userId, @Param("status") String status, @Param("active") int active);
 
-    @Query(value = "select * from posts where id = :post_id and posts.moderator_status='ACCEPTED' and posts.is_active=1 and posts.instant<=now()",
+    @Query(value = "select * from posts where id = :post_id and posts.is_active=1 and posts.instant<=now()",
             nativeQuery = true)
     Optional<Post> postById(@Param("post_id") int postId);
 
@@ -132,7 +136,15 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
     nativeQuery = true)
     int viewCountSum();
 
-    @Query(value = "select instant from posts where id=1",
+    @Query(value = "select sum(view_count) from posts where user_id = :id",
+            nativeQuery = true)
+    int viewCountSumById(int id);
+
+    @Query(value = "select MIN(instant) from posts",
     nativeQuery = true)
     Instant getFirstPublication();
+
+    @Query(value = "select MIN(instant) from posts where user_id = :id ",
+            nativeQuery = true)
+    Instant getFirstPublicationById(int id);
 }
