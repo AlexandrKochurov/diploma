@@ -138,7 +138,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
 
     @Query(value = "select sum(view_count) from posts where user_id = :id",
             nativeQuery = true)
-    int viewCountSumById(int id);
+    Integer viewCountSumById(int id);
 
     @Query(value = "select MIN(instant) from posts",
     nativeQuery = true)

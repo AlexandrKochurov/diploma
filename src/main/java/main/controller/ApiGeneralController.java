@@ -4,12 +4,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import main.api.request.ChangeProfileRequest;
-import main.api.request.CommentRequest;
-import main.api.request.PostModerationRequest;
-import main.api.request.SettingsRequest;
+import main.api.request.*;
 import main.api.response.*;
-import main.model.User;
 import main.service.impl.GeneralServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -114,20 +110,19 @@ public class ApiGeneralController {
     }
 
     @PostMapping(value = "profile/my", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> updateProfile(@Valid @RequestBody ChangeProfileRequest request) throws IOException {
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody ChangeProfileRequest request){
         return ResponseEntity.ok(generalServiceImpl.changeProfile(request));
     }
 
     @PostMapping(value = "profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateProfileWithPhoto(
             @RequestParam("photo") MultipartFile photo, // это картинка
-            @RequestParam("removePhoto") int removePhoto,
+            @RequestParam("removePhoto") Integer removePhoto,
             @RequestParam(name = "name") String name,
             @RequestParam(name = "email") String email,
             @RequestParam(name = "password", required = false) String password
     ) throws IOException {
-        ChangeProfileRequest changeProfileRequest = new ChangeProfileRequest(photo, name, email, password, removePhoto);
-        return ResponseEntity.ok(generalServiceImpl.changeProfile(changeProfileRequest));
+        return ResponseEntity.ok(generalServiceImpl.changeProfileWithPhoto(photo, name, email, password, removePhoto));
     }
 
     @PostMapping(value = "moderation")

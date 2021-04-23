@@ -1,16 +1,9 @@
 package main.service;
 
-import main.api.request.ChangeProfileRequest;
-import main.api.request.ImageUploadRequest;
-import main.api.request.PostModerationRequest;
-import main.api.request.SettingsRequest;
+import main.api.request.*;
 import main.api.response.*;
-import main.model.User;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 public interface GeneralService {
     String imageUpload(MultipartFile multipartFile) throws IOException;
@@ -19,7 +12,9 @@ public interface GeneralService {
 
     CalendarResponse calendar(Integer year);
 
-    ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) throws IOException;
+    ChangeProfileResponse changeProfileWithPhoto(MultipartFile photo, String email, String password, String name, Integer removePhoto) throws IOException;
+
+    ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest);
 
     StatisticResponse myStats();
 

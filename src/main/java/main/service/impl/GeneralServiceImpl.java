@@ -19,7 +19,6 @@ import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +28,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -92,6 +90,7 @@ public class GeneralServiceImpl implements GeneralService {
 
     @Override
     public TagResponse tagsList(String query) {
+        List<TagDTO> list = getTagDTOs(tagRepository.tagsByWeight(query));
         return new TagResponse(getTagDTOs(tagRepository.tagsByWeight(query)));
     }
 
@@ -110,20 +109,14 @@ public class GeneralServiceImpl implements GeneralService {
         return new CalendarResponse(allYears, posts);
     }
 
-    @Override
-    public ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) throws IOException {
+    private Map<String, String> checkProfileChanges(ChangeProfileRequest changeProfileRequest) {
         Map<String, String> errors = new HashMap<>();
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         //Проверка осуществляется только если email менялся.
-        if(!currentUserEmail.equals(changeProfileRequest.getEmail())) {
+        if (!currentUserEmail.equals(changeProfileRequest.getEmail())) {
             if (!changeProfileRequest.getEmail().matches("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")
-            || userRepository.findByEmail(changeProfileRequest.getEmail()).isPresent()) {
+                    || userRepository.findByEmail(changeProfileRequest.getEmail()).isPresent()) {
                 errors.put("email", "Неверно введен email или email уже существует");
-            }
-        }
-        if (changeProfileRequest.getPhoto() != null) {
-            if (changeProfileRequest.getPhoto().getSize() > maxFileSize) {
-                errors.put("photo", "Фото слишком большого размера");
             }
         }
         if (changeProfileRequest.getPassword() != null) {
@@ -136,25 +129,31 @@ public class GeneralServiceImpl implements GeneralService {
                 errors.put("name", "Имя не должно содержать других символов кроме букв");
             }
         }
+        return errors;
+    }
+
+    @Override
+    public ChangeProfileResponse changeProfileWithPhoto(MultipartFile photo, String email, String password, String name, Integer removePhoto) throws IOException {
+        String photoPath = uploadPhotoWithResize(photo);
+        ChangeProfileRequest changeProfileRequest = new ChangeProfileRequest(photoPath, name, email, password, removePhoto);
+        Map<String, String> errors = new HashMap<>(checkProfileChanges(changeProfileRequest));
         if (!errors.isEmpty()) {
             return new ChangeProfileResponse(false, errors);
         }
+        return makeChangesToProfile(changeProfileRequest);
+    }
 
-        Optional<User> user = userRepository.findByEmail(currentUserEmail);
-
-        if (changeProfileRequest.getPhoto() != null) {
-            Path path = Path.of(uploadPath + "photo/" + changeProfileRequest.getPhoto().getOriginalFilename());
-            ByteArrayInputStream bais = new ByteArrayInputStream(changeProfileRequest.getPhoto().getBytes());
-            BufferedImage bufferedImage = ImageIO.read(bais);
-            File file = new File(path.toString());
-            if (!file.exists()) {
-                file.mkdirs();
-            }
-            ImageIO.write(Scalr.resize(bufferedImage, Scalr.Method.ULTRA_QUALITY, PICTURE_WIDTH, PICTURE_HEIGHT), "jpg", file);
-
-            user.get().setPhoto("/" + file.toString().replace("\\", "/"));
+    @Override
+    public ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) {
+        Map<String, String> errors = new HashMap<>(checkProfileChanges(changeProfileRequest));
+        if (!errors.isEmpty()) {
+            return new ChangeProfileResponse(false, errors);
         }
+        return makeChangesToProfile(changeProfileRequest);
+    }
 
+    private ChangeProfileResponse makeChangesToProfile(ChangeProfileRequest changeProfileRequest){
+        Optional<User> user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
         if (!changeProfileRequest.getEmail().isBlank()) {
             user.get().setEmail(changeProfileRequest.getEmail());
         }
@@ -165,8 +164,13 @@ public class GeneralServiceImpl implements GeneralService {
         if (!changeProfileRequest.getName().isBlank()) {
             user.get().setName(changeProfileRequest.getName());
         }
-        if (changeProfileRequest.getRemovePhoto() == 1) {
-            user.get().setPhoto(null);
+        if(changeProfileRequest.getPhoto() != null){
+            user.get().setPhoto(changeProfileRequest.getPhoto());
+        }
+        if (changeProfileRequest.getRemovePhoto() != null) {
+            if (changeProfileRequest.getRemovePhoto() == 1) {
+                user.get().setPhoto(null);
+            }
         }
         userRepository.save(user.get());
         return new ChangeProfileResponse(true);
@@ -179,8 +183,8 @@ public class GeneralServiceImpl implements GeneralService {
                 postRepository.countMyPosts(userId),
                 postVoteRepository.countLikesById(userId),
                 postVoteRepository.countDislikesById(userId),
-                postRepository.viewCountSumById(userId),
-                postRepository.getFirstPublicationById(userId).getEpochSecond()
+                postRepository.viewCountSumById(userId) == null ? 0 : postRepository.viewCountSumById(userId),
+                postRepository.getFirstPublicationById(userId) == null ? 0 : postRepository.getFirstPublicationById(userId).getEpochSecond()
         );
     }
 
@@ -245,7 +249,7 @@ public class GeneralServiceImpl implements GeneralService {
     public ModeratorDecisionResponse changeModeratorDecision(PostModerationRequest request) {
         Post post = postRepository.postByIdForModeration(request.getPostId()).get();
         User moderator = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
-        if(request.getDecision().equalsIgnoreCase("accept")){
+        if (request.getDecision().equalsIgnoreCase("accept")) {
             post.setModStatus(ModerationStatus.ACCEPTED);
         } else {
             post.setModStatus(ModerationStatus.DECLINED);
@@ -286,5 +290,17 @@ public class GeneralServiceImpl implements GeneralService {
             if (i == 1 || i == 3 || i == 5) stringBuilder.append("/");
         }
         return stringBuilder.toString();
+    }
+
+    private String uploadPhotoWithResize(MultipartFile photo) throws IOException {
+        Path path = Path.of(uploadPath + "photo/" + photo.getOriginalFilename());
+        ByteArrayInputStream bais = new ByteArrayInputStream(photo.getBytes());
+        BufferedImage bufferedImage = ImageIO.read(bais);
+        File file = new File(path.toString());
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        ImageIO.write(Scalr.resize(bufferedImage, Scalr.Method.ULTRA_QUALITY, PICTURE_WIDTH, PICTURE_HEIGHT), "jpg", file);
+        return "/" + file.toString().replace("\\", "/");
     }
 }
