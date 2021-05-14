@@ -1,6 +1,7 @@
 package main.service.impl;
 
 import main.api.request.ChangeProfileRequest;
+import main.api.request.CommentRequest;
 import main.api.request.PostModerationRequest;
 import main.api.request.SettingsRequest;
 import main.api.response.*;
@@ -8,6 +9,7 @@ import main.dto.CalendarInterfaceProjection;
 import main.dto.TagDTO;
 import main.dto.TagInterfaceProjection;
 import main.exceptions.BadImageException;
+import main.exceptions.FalseResultWithErrorsException;
 import main.model.GlobalSettingsName;
 import main.model.ModerationStatus;
 import main.model.Post;
@@ -133,26 +135,26 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public ChangeProfileResponse changeProfileWithPhoto(MultipartFile photo, String email, String password, String name, Integer removePhoto) throws IOException {
+    public ResultResponse changeProfileWithPhoto(MultipartFile photo, String email, String password, String name, Integer removePhoto) throws IOException {
         String photoPath = uploadPhotoWithResize(photo);
         ChangeProfileRequest changeProfileRequest = new ChangeProfileRequest(photoPath, name, email, password, removePhoto);
         Map<String, String> errors = new HashMap<>(checkProfileChanges(changeProfileRequest));
         if (!errors.isEmpty()) {
-            return new ChangeProfileResponse(false, errors);
+            throw new FalseResultWithErrorsException(false, errors);
         }
         return makeChangesToProfile(changeProfileRequest);
     }
 
     @Override
-    public ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest) {
+    public ResultResponse changeProfile(ChangeProfileRequest changeProfileRequest) {
         Map<String, String> errors = new HashMap<>(checkProfileChanges(changeProfileRequest));
         if (!errors.isEmpty()) {
-            return new ChangeProfileResponse(false, errors);
+            throw new FalseResultWithErrorsException(false, errors);
         }
         return makeChangesToProfile(changeProfileRequest);
     }
 
-    private ChangeProfileResponse makeChangesToProfile(ChangeProfileRequest changeProfileRequest){
+    private ResultResponse makeChangesToProfile(ChangeProfileRequest changeProfileRequest){
         Optional<User> user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
         if (!changeProfileRequest.getEmail().isBlank()) {
             user.get().setEmail(changeProfileRequest.getEmail());
@@ -173,7 +175,7 @@ public class GeneralServiceImpl implements GeneralService {
             }
         }
         userRepository.save(user.get());
-        return new ChangeProfileResponse(true);
+        return SimpleResultResponse.TRUE;
     }
 
     @Override
@@ -205,27 +207,27 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public CommentResponse comment(int parentId, int postId, String text) {
+    public CommentResponse comment(CommentRequest commentRequest) {
         Map<String, String> errors = new HashMap<>();
         int userId = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get().getId();
-        if (postRepository.findById(postId).isEmpty()) {
-            errors.put("post_id", "There is no such post");
+        if (postRepository.findById(commentRequest.getPostId()).isEmpty()) {
+            errors.put("post_id", "Такого поста не существует");
         }
-        if (parentId != 0 && postCommentsRepository.checkParent(parentId) == 0) {
-            errors.put("parent_id", "There is no such parental comment");
+        if (commentRequest.getParentId() != 0 && postCommentsRepository.checkParent(commentRequest.getParentId()) == 0) {
+            errors.put("parent_id", "Не существует родительского комментария");
         }
-        if (text.length() < 15) {
-            errors.put("text", "The text is too short or empty");
+        if (commentRequest.getText().length() < 15) {
+            errors.put("text", "Текст комментария пустой или слишком короткий, минимум 15 символов");
         }
-        if (parentId > 0 && errors.isEmpty()) {
-            postCommentsRepository.newCommentToComment(parentId, postId, text, userId);
+        if (commentRequest.getParentId() > 0 && errors.isEmpty()) {
+            postCommentsRepository.newCommentToComment(commentRequest.getParentId(), commentRequest.getPostId(), commentRequest.getText(), userId);
             return new CommentResponse(postCommentsRepository.getLastCommentId());
         }
         if (errors.isEmpty()) {
-            postCommentsRepository.newCommentToPost(postId, text, userId);
+            postCommentsRepository.newCommentToPost(commentRequest.getPostId(), commentRequest.getText(), userId);
             return new CommentResponse(postCommentsRepository.getLastCommentId());
         }
-        return new CommentResponse(false, errors);
+        throw new FalseResultWithErrorsException(false, errors);
     }
 
     @Override
@@ -246,7 +248,7 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     @Override
-    public ModeratorDecisionResponse changeModeratorDecision(PostModerationRequest request) {
+    public ResultResponse changeModeratorDecision(PostModerationRequest request) {
         Post post = postRepository.postByIdForModeration(request.getPostId()).get();
         User moderator = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
         if (request.getDecision().equalsIgnoreCase("accept")) {
@@ -256,7 +258,7 @@ public class GeneralServiceImpl implements GeneralService {
         }
         post.setModeratorId(moderator);
         postRepository.save(post);
-        return new ModeratorDecisionResponse(true);
+        return SimpleResultResponse.TRUE;
     }
 
     private List<TagDTO> getTagDTOs(List<TagInterfaceProjection> tagList) {

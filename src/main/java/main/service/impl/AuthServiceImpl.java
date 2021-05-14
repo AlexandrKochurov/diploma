@@ -6,10 +6,12 @@ import main.api.request.LoginRequest;
 import main.api.request.PassChangeRequest;
 import main.api.request.PassRecoverRequest;
 import main.api.response.*;
+import main.exceptions.FalseResultWithErrorsException;
 import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,42 +56,42 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse checkAuth(Principal principal) {
-        if (principal == null){
+        if (principal == null) {
             return new LoginResponse(false);
         }
         return getLoginResponse(principal.getName());
     }
 
     @Override
-    public PassRecoverResponse passRecover(PassRecoverRequest passRecoverRequest) {
-        if(userRepository.findByEmail(passRecoverRequest.getEmail()).isPresent()){
+    public ResultResponse passRecover(PassRecoverRequest passRecoverRequest) {
+        if (userRepository.findByEmail(passRecoverRequest.getEmail()).isPresent()) {
             String hash = secretCodeGenerator();
             emailService.sendPassRecoveryHash(passRecoverRequest.getEmail(), "Password recovery", "http://localhost:8080/login/change-password/" + hash);
             userRepository.addCodeToUser(hash, passRecoverRequest.getEmail());
-            return new PassRecoverResponse(true);
+            return SimpleResultResponse.TRUE;
         }
-        return new PassRecoverResponse(false);
+        return SimpleResultResponse.FALSE;
     }
 
     @Override
-    public PassChangeResponse passChange(PassChangeRequest passChangeRequest) {
+    public ResultResponse passChange(PassChangeRequest passChangeRequest) {
         Map<String, String> errors = new HashMap<>();
-        if(captchaCodesRepository.countByCodeAndSecretCode(passChangeRequest.getCaptcha(), passChangeRequest.getCaptchaSecret()) == 0){
+        if (captchaCodesRepository.countByCodeAndSecretCode(passChangeRequest.getCaptcha(), passChangeRequest.getCaptchaSecret()) == 0) {
             errors.put("captcha", "Капча введена неверно");
         }
-        if(passChangeRequest.getPassword().length() < minPassLength){
+        if (passChangeRequest.getPassword().length() < minPassLength) {
             errors.put("password", "Пароль должен быть не менее 6 символов");
         }
-        if(!errors.isEmpty()){
-            return new PassChangeResponse(false, errors);
+        if (!errors.isEmpty()) {
+            throw new FalseResultWithErrorsException(false, errors);
         }
         BCryptPasswordEncoder passEnc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
         userRepository.changePass(passEnc.encode(passChangeRequest.getPassword()), passChangeRequest.getCode());
-        return new PassChangeResponse(true);
+        return SimpleResultResponse.TRUE;
     }
 
     @Override
-    public RegisterResponse registration(String email, String password, String name, String code, String secretCode) {
+    public ResultResponse registration(String email, String password, String name, String code, String secretCode) {
         Map<String, String> errors = new HashMap<>();
         if (captchaCodesRepository.countByCodeAndSecretCode(code, secretCode) == 0) {
             errors.put("captcha", "Код с картинки введен не верно");
@@ -104,11 +106,11 @@ public class AuthServiceImpl implements AuthService {
             errors.put("password", "Пароль должен быть не менее 6 символов");
         }
         if (!errors.isEmpty()) {
-            return new RegisterResponse(false, errors);
+            throw new FalseResultWithErrorsException(false, errors);
         }
         BCryptPasswordEncoder passEnc = new BCryptPasswordEncoder(BCryptPasswordEncoder.BCryptVersion.$2Y);
         userRepository.addNewUser(email, name, passEnc.encode(password));
-        return new RegisterResponse(true);
+        return SimpleResultResponse.TRUE;
     }
 
     @Override
@@ -124,23 +126,24 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public LogoutResponse logout() {
+    public ResultResponse logout() {
         SecurityContextHolder.clearContext();
-        return new LogoutResponse(true);
+        return SimpleResultResponse.TRUE;
     }
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-        if(userRepository.findByEmail(loginRequest.getEmail()).isEmpty()){
+        try {
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                    loginRequest.getEmail(),
+                    loginRequest.getPassword()
+            ));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
+            return getLoginResponse(user.getUsername());
+        } catch (BadCredentialsException bce) {
             return new LoginResponse(false);
         }
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                loginRequest.getEmail(),
-                loginRequest.getPassword()
-        ));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
-        return getLoginResponse(user.getUsername());
     }
 
     private static String secretCodeGenerator() {

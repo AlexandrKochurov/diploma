@@ -98,7 +98,7 @@ public class ApiGeneralController {
     @ApiResponse(code = 200, message = "Комментарий успешно добавлен")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<CommentResponse> comment(@RequestBody CommentRequest commentRequest) {
-        return ResponseEntity.ok(generalServiceImpl.comment(commentRequest.getParentId(), commentRequest.getPostId(), commentRequest.getText()));
+        return ResponseEntity.ok(generalServiceImpl.comment(commentRequest));
     }
 
     @PostMapping(value = "image", consumes = {"multipart/form-data"})
@@ -129,7 +129,7 @@ public class ApiGeneralController {
     @ApiOperation(value = "Решение модератора", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Решение принято")
     @PreAuthorize("hasAuthority('user:moderate')")
-    public ResponseEntity<ModeratorDecisionResponse> postModeration(@RequestBody PostModerationRequest request){
+    public ResponseEntity<ResultResponse> postModeration(@RequestBody PostModerationRequest request){
         return ResponseEntity.ok(generalServiceImpl.changeModeratorDecision(request));
     }
 }

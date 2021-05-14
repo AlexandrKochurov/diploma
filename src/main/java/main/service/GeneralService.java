@@ -12,9 +12,9 @@ public interface GeneralService {
 
     CalendarResponse calendar(Integer year);
 
-    ChangeProfileResponse changeProfileWithPhoto(MultipartFile photo, String email, String password, String name, Integer removePhoto) throws IOException;
+    ResultResponse changeProfileWithPhoto(MultipartFile photo, String email, String password, String name, Integer removePhoto) throws IOException;
 
-    ChangeProfileResponse changeProfile(ChangeProfileRequest changeProfileRequest);
+    ResultResponse changeProfile(ChangeProfileRequest changeProfileRequest);
 
     StatisticResponse myStats();
 
@@ -22,9 +22,9 @@ public interface GeneralService {
 
     void setGlobalSettings(SettingsRequest settingsRequest);
 
-    CommentResponse comment(int parentId, int postId, String text);
+    Object comment(CommentRequest commentRequest);
 
     SettingsResponse getGlobalSettings();
 
-    ModeratorDecisionResponse changeModeratorDecision(PostModerationRequest request);
+    ResultResponse changeModeratorDecision(PostModerationRequest request);
 }

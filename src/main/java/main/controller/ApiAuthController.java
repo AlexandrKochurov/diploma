@@ -3,6 +3,7 @@ package main.controller;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
+import main.Main;
 import main.api.request.LoginRequest;
 import main.api.request.PassChangeRequest;
 import main.api.request.PassRecoverRequest;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping(value = "/api/auth")
@@ -40,7 +43,7 @@ public class ApiAuthController {
     @PostMapping("/register")
     @ApiOperation(value = "Регистрация пользователя", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Пользователь был успешно добавлен!")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<ResultResponse> register(@RequestBody RegisterRequest registerRequest) {
         return ResponseEntity.ok(
                 authService.registration(registerRequest.getEmail(),
                         registerRequest.getPassword(),
@@ -52,28 +55,28 @@ public class ApiAuthController {
     @PostMapping("/login")
     @ApiOperation(value = "Логин пользователя", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Пользователь успешно залогинился")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.login(loginRequest));
     }
 
     @GetMapping("/logout")
     @ApiOperation(value = "Разлогин пользователя", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Пользователь успешно разлогинился")
-    public ResponseEntity<LogoutResponse> logout() {
+    public ResponseEntity<ResultResponse> logout() {
         return ResponseEntity.ok(authService.logout());
     }
 
     @PostMapping("/restore")
     @ApiOperation(value = "Восстановление пароля", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Пароль успешно восстановлен")
-    public ResponseEntity<PassRecoverResponse> passwordRestore(@RequestBody PassRecoverRequest passRecoverRequest) {
+    public ResponseEntity<ResultResponse> passwordRestore(@RequestBody PassRecoverRequest passRecoverRequest) {
         return ResponseEntity.ok(authService.passRecover(passRecoverRequest));
     }
 
     @PostMapping("/password")
     @ApiOperation(value = "Изменение пароля", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Пароль успешно изменен")
-    public ResponseEntity<PassChangeResponse> passwordChange(@RequestBody PassChangeRequest passChangeRequest) {
+    public ResponseEntity<ResultResponse> passwordChange(@RequestBody PassChangeRequest passChangeRequest) {
         return ResponseEntity.ok(authService.passChange(passChangeRequest));
     }
 }

@@ -14,15 +14,15 @@ public interface AuthService {
 
      LoginResponse checkAuth(Principal principal);
 
-     PassRecoverResponse passRecover(PassRecoverRequest passRecoverRequest);
+     ResultResponse passRecover(PassRecoverRequest passRecoverRequest);
 
-     PassChangeResponse passChange(PassChangeRequest passChangeRequest);
+     ResultResponse passChange(PassChangeRequest passChangeRequest);
 
-     RegisterResponse registration(String email, String password, String name, String code, String secretCode);
+     ResultResponse registration(String email, String password, String name, String code, String secretCode);
 
      CaptchaResponse getCaptcha() throws IOException;
 
-     LogoutResponse logout();
+     ResultResponse logout();
 
      LoginResponse login(LoginRequest loginRequest);
 }

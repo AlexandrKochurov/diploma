@@ -5,6 +5,7 @@ import main.api.response.*;
 import main.dto.PostCommentsDTO;
 import main.dto.PostDTO;
 import main.dto.UserDTO;
+import main.exceptions.FalseResultWithErrorsException;
 import main.exceptions.NotFoundPostByIdException;
 import main.exceptions.NotFoundPostsException;
 import main.model.*;
@@ -114,9 +115,15 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostByIdResponse postById(int id) {
-        Post post = postRepository.postById(id)
-                .orElseThrow(NotFoundPostByIdException::new);
-        if(!SecurityContextHolder.getContext().getAuthentication().getName().equalsIgnoreCase(NOTAUTHUSER)){
+        Post post = postRepository.postByIdForModeration(id).orElseThrow(NotFoundPostByIdException::new);
+        if (SecurityContextHolder.getContext().getAuthentication().getName().equalsIgnoreCase(NOTAUTHUSER)) {
+            post = postRepository.postById(id).orElseThrow(NotFoundPostByIdException::new);
+            return getPostByIdResponse(post);
+        }
+        User user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
+        //Если текущий юзер - не автор поста и не модератор то пост отображается с учетом статуса модерации, в противном случае этот статус не учитывается
+        if (post.getUserId().getId() != user.getId() && user.getIsModerator() == 0) {
+            post = postRepository.postById(id).orElseThrow(NotFoundPostByIdException::new);
             post.setViewCount(addViewToPost(post.getViewCount(), post));
             postRepository.save(post);
         }
@@ -124,24 +131,24 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public AddOrEditPostResponse addPost(AddOrEditPostRequest addPostRequest) {
+    public ResultResponse addPost(AddOrEditPostRequest addPostRequest) {
         Post post = new Post();
         Map<String, String> errors = addOrChangePost(post, addPostRequest);
         if (errors.isEmpty()) {
-            return new AddOrEditPostResponse(true);
+            return SimpleResultResponse.TRUE;
         } else {
-            return new AddOrEditPostResponse(false, errors);
+            throw new FalseResultWithErrorsException(false, errors);
         }
     }
 
     @Override
-    public AddOrEditPostResponse editPost(int id, AddOrEditPostRequest editPostRequest) throws Exception {
-        Post postToChange = postRepository.postById(id).orElseThrow(NotFoundPostByIdException::new);
+    public ResultResponse editPost(int id, AddOrEditPostRequest editPostRequest) throws Exception {
+        Post postToChange = postRepository.postByIdForModeration(id).orElseThrow(NotFoundPostByIdException::new);
         Map<String, String> errors = addOrChangePost(postToChange, editPostRequest);
         if (errors.isEmpty()) {
-            return new AddOrEditPostResponse(true);
+            return SimpleResultResponse.TRUE;
         } else {
-            return new AddOrEditPostResponse(false, errors);
+            throw new FalseResultWithErrorsException(false, errors);
         }
     }
 
@@ -151,9 +158,9 @@ public class PostServiceImpl implements PostService {
         postRepository.deleteById(id);
     }
 
-    public LikeDislikeResponse setLikeOrDislike(int postId, byte vote) {
-        if(SecurityContextHolder.getContext().getAuthentication().getName().equalsIgnoreCase(NOTAUTHUSER)){
-            return new LikeDislikeResponse(false);
+    public ResultResponse setLikeOrDislike(int postId, byte vote) {
+        if (SecurityContextHolder.getContext().getAuthentication().getName().equalsIgnoreCase(NOTAUTHUSER)) {
+            return SimpleResultResponse.FALSE;
         }
 
         Post post = postRepository.postById(postId).orElseThrow(NotFoundPostByIdException::new);
@@ -165,7 +172,7 @@ public class PostServiceImpl implements PostService {
                 .orElseGet(PostVote::new);
 
         if (postVote.getValue() == vote) { // если голос тот же что и пробуют поставить возвращаем false
-            return new LikeDislikeResponse(false);
+            return SimpleResultResponse.FALSE;
         }
 
         // иначе заполняем данными, новая дата, и данные которые нужны для нового голоса
@@ -176,7 +183,7 @@ public class PostServiceImpl implements PostService {
 
         postVoteRepository.save(postVote);
 
-        return new LikeDislikeResponse(true);
+        return SimpleResultResponse.TRUE;
     }
 
     private List<PostDTO> getPostsDTO(List<Post> postList) {
@@ -187,7 +194,7 @@ public class PostServiceImpl implements PostService {
                                         post.getId(),
                                         post.getInstant().getEpochSecond(),
                                         post.getTitle(),
-                                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)).replaceAll("\\<.*?>",""),
+                                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)).replaceAll("\\<.*?>", ""),
                                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
                                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
                                         post.getPostCommentsList().size(),
@@ -223,7 +230,7 @@ public class PostServiceImpl implements PostService {
                 (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
                 post.getViewCount(),
                 getPostCommentsDTO(post.getPostCommentsList()),
-                post.getTagList().stream().filter(tag -> tag.getId() == post.getId()).map(Tag::getName).collect(Collectors.toList())
+                post.getTagList().stream().map(Tag::getName).collect(Collectors.toList())
         );
     }
 
@@ -231,16 +238,16 @@ public class PostServiceImpl implements PostService {
         User user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
         Map<String, String> errors = new HashMap<>();
         if (addOrEditPostRequest.getTitle().isBlank() || addOrEditPostRequest.getTitle().length() < 3) {
-            errors.put("title", "Заголовок пустой или не установлен");
+            errors.put("title", "Заголовок пустой или слишком короткий, минимум 3 символа");
         }
         if (addOrEditPostRequest.getText().isBlank() || addOrEditPostRequest.getText().length() < 50) {
-            errors.put("text", "Текст поста пустой или не установлен");
+            errors.put("text", "Текст поста пустой или слишком короткий, минимум 50 символов");
         }
         if (errors.isEmpty()) {
             post.setIsActive(addOrEditPostRequest.getActive());
 
             //Проверка, если текущий юзер - не модератор, то при изменении поста его статус будет меняться на NEW
-            if(user.getIsModerator() == 0) {
+            if (user.getIsModerator() == 0) {
                 post.setModStatus(ModerationStatus.NEW);
             }
             //Проверка времени, если стоит раньше чем текущее, ставим текущее
@@ -257,9 +264,11 @@ public class PostServiceImpl implements PostService {
             //Создание и добавление тегов
             List<Tag> tagList = new ArrayList<>();
             for (String name : addOrEditPostRequest.getTags()) {
-                Tag tag = new Tag();
-                tag.setName(name);
-                tagList.add(tag);
+                if(!addOrEditPostRequest.getTags().contains(name)) {
+                    Tag tag = new Tag();
+                    tag.setName(name);
+                    tagList.add(tag);
+                }
             }
             post.setTagList(tagList);
 

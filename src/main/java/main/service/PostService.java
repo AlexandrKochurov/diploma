@@ -26,13 +26,13 @@ public interface PostService {
     PostByIdResponse postById(int id) throws Exception;
 
     //Метод добавления поста
-    AddOrEditPostResponse addPost(AddOrEditPostRequest addPostRequest);
+    ResultResponse addPost(AddOrEditPostRequest addPostRequest);
 
     //Метод редактирования поста
-    AddOrEditPostResponse editPost(int id, AddOrEditPostRequest editPostRequest) throws Exception;
+    ResultResponse editPost(int id, AddOrEditPostRequest editPostRequest) throws Exception;
 
     //Метод удаления поста
     void deletePost(int id) throws Exception;
 
-    LikeDislikeResponse setLikeOrDislike(int postId, byte vote);
+    ResultResponse setLikeOrDislike(int postId, byte vote);
 }

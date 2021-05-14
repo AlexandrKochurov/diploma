@@ -113,7 +113,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
             nativeQuery = true)
     List<Post> myPosts(Pageable pageable, @Param("user_id") int userId, @Param("status") String status, @Param("active") int active);
 
-    @Query(value = "select * from posts where id = :post_id and posts.is_active=1 and posts.instant<=now()",
+    @Query(value = "select * from posts where id = :post_id and posts.is_active=1 and posts.instant<=now() and posts.moderator_status='ACCEPTED'",
             nativeQuery = true)
     Optional<Post> postById(@Param("post_id") int postId);
 

@@ -3,12 +3,10 @@ package main.api.response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Component;
 
 @Data
-@Component
 @AllArgsConstructor
 @NoArgsConstructor
-public class LikeDislikeResponse {
+public class ResultResponse {
     private boolean result;
 }

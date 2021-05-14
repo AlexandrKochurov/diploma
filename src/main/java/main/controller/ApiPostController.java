@@ -6,9 +6,9 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import main.api.request.AddOrEditPostRequest;
 import main.api.request.LikeAndDislikeRequest;
-import main.api.response.LikeDislikeResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsListResponse;
+import main.api.response.ResultResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -133,21 +133,20 @@ public class ApiPostController {
             @RequestBody AddOrEditPostRequest editPostRequest,
             @PathVariable(name = "id", required = false) int id
     ) throws Exception {
-        postServiceImpl.editPost(id, editPostRequest);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postServiceImpl.editPost(id, editPostRequest));
     }
 
     @PostMapping(value = "/like")
     @ApiOperation(value = "Лайк поста", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Лайк поставлен")
-    public ResponseEntity<LikeDislikeResponse> like(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
+    public ResponseEntity<ResultResponse> like(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
         return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), LIKE));
     }
 
     @PostMapping(value = "/dislike")
     @ApiOperation(value = "Дизлайк поста", response = ResponseEntity.class)
     @ApiResponse(code = 200, message = "Дизлайк поставлен")
-    public ResponseEntity<LikeDislikeResponse> dislike(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
+    public ResponseEntity<ResultResponse> dislike(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
         return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), DISLIKE));
     }
 }
