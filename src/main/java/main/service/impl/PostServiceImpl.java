@@ -20,6 +20,7 @@ import main.repositories.PostRepository;
 import main.service.PostService;
 
 
+import javax.xml.stream.events.Comment;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -188,33 +189,13 @@ public class PostServiceImpl implements PostService {
 
     private List<PostDTO> getPostsDTO(List<Post> postList) {
         return postList.stream()
-                .map(
-                        post ->
-                                new PostDTO(
-                                        post.getId(),
-                                        post.getInstant().getEpochSecond(),
-                                        post.getTitle(),
-                                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)).replaceAll("\\<.*?>", ""),
-                                        (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
-                                        (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
-                                        post.getPostCommentsList().size(),
-                                        post.getViewCount(),
-                                        new UserDTO(post.getUserId().getId(), post.getUserId().getName())
-                                ))
+                .map(this::toPostDTO)
                 .collect(toList());
     }
 
     private List<PostCommentsDTO> getPostCommentsDTO(List<PostComments> postCommentsList) {
         return postCommentsList.stream()
-                .map(
-                        comment ->
-                                new PostCommentsDTO(
-                                        comment.getId(),
-                                        comment.getTime().getEpochSecond(),
-                                        comment.getText(),
-                                        new UserDTO(comment.getUserId().getId(), comment.getUserId().getName(), comment.getUserId().getPhoto())
-                                )
-                )
+                .map(this::toPostCommentsDTO)
                 .collect(toList());
     }
 
@@ -285,5 +266,28 @@ public class PostServiceImpl implements PostService {
             return currentView;
         }
         return ++currentView;
+    }
+
+    private PostDTO toPostDTO(Post post){
+        return new PostDTO(
+                        post.getId(),
+                        post.getInstant().getEpochSecond(),
+                        post.getTitle(),
+                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)).replaceAll("\\<.*?>", ""),
+                        (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
+                        (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
+                        post.getPostCommentsList().size(),
+                        post.getViewCount(),
+                        new UserDTO(post.getUserId().getId(), post.getUserId().getName())
+                );
+    }
+
+    private PostCommentsDTO toPostCommentsDTO(PostComments comment){
+        return new PostCommentsDTO(
+                comment.getId(),
+                comment.getTime().getEpochSecond(),
+                comment.getText(),
+                new UserDTO(comment.getUserId().getId(), comment.getUserId().getName(), comment.getUserId().getPhoto())
+        );
     }
 }
