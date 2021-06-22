@@ -4,7 +4,6 @@ import main.api.request.LoginRequest;
 import main.api.request.PassChangeRequest;
 import main.api.request.PassRecoverRequest;
 import main.api.response.*;
-import main.model.User;
 
 import java.io.IOException;
 import java.security.Principal;

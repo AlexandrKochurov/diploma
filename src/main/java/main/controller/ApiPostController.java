@@ -1,9 +1,5 @@
 package main.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import main.api.request.AddOrEditPostRequest;
 import main.api.request.LikeAndDislikeRequest;
 import main.api.response.PostByIdResponse;
@@ -18,7 +14,6 @@ import main.service.impl.PostServiceImpl;
 
 @RestController
 @RequestMapping(value = "/api/post")
-@Api(value = "Api Post Controller")
 public class ApiPostController {
 
     private final PostServiceImpl postServiceImpl;
@@ -32,8 +27,6 @@ public class ApiPostController {
     }
 
     @GetMapping(value = "")
-    @ApiOperation(value = "Вывод списка постов", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<PostsListResponse> getPosts(
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
@@ -43,8 +36,6 @@ public class ApiPostController {
     }
 
     @GetMapping(value = "/search")
-    @ApiOperation(value = "Вывод списка постов по запросу", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<PostsListResponse> searchPosts(
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
@@ -54,8 +45,6 @@ public class ApiPostController {
     }
 
     @GetMapping(value = "/byDate")
-    @ApiOperation(value = "Вывод списка постов за указанную дату", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Posts either found or not :)")
     public ResponseEntity<PostsListResponse> postsByDate(
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
@@ -65,9 +54,6 @@ public class ApiPostController {
     }
 
     @GetMapping(value = "/byTag")
-    @ApiOperation(value = "Вывод списка постов по тегу", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Posts either found or not :)")
-//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<PostsListResponse> postsByTag(
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
@@ -77,8 +63,6 @@ public class ApiPostController {
     }
 
     @GetMapping(value = "/moderation")
-    @ApiOperation(value = "Список постов на модерацию", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Posts either found or not :)")
     @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<?> postsForModeration(
             @RequestParam(name = "offset", required = false) int offset,
@@ -89,8 +73,6 @@ public class ApiPostController {
     }
 
     @GetMapping(value = "/my")
-    @ApiOperation(value = "Список моих постов", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Posts either found or not :)")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<PostsListResponse> myPosts(
             @RequestParam(name = "offset", required = false) int offset,
@@ -101,33 +83,17 @@ public class ApiPostController {
     }
 
     @GetMapping(value = "/{id}")
-    @ApiOperation(value = "Вывод поста по id", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Пост успешно найден"),
-            @ApiResponse(code = 404, message = "Пост не найден")
-    })
-//    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<PostByIdResponse> postById(@PathVariable int id) {
         return ResponseEntity.ok(postServiceImpl.postById(id));
     }
 
     @PostMapping(value = "")
-    @ApiOperation(value = "Добавление поста", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Пост успешно добавлен"),
-            @ApiResponse(code = 404, message = "Пост не найден")
-    })
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<?> addPost(@RequestBody AddOrEditPostRequest addPostRequest) {
         return ResponseEntity.ok(postServiceImpl.addPost(addPostRequest));
     }
 
     @PutMapping(value = "/{id}")
-    @ApiOperation(value = "Изменение поста", response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Пост успешно изменен"),
-            @ApiResponse(code = 404, message = "Пост не найден")
-    })
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<?> editPost(
             @RequestBody AddOrEditPostRequest editPostRequest,
@@ -137,15 +103,11 @@ public class ApiPostController {
     }
 
     @PostMapping(value = "/like")
-    @ApiOperation(value = "Лайк поста", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Лайк поставлен")
     public ResponseEntity<ResultResponse> like(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
         return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), LIKE));
     }
 
     @PostMapping(value = "/dislike")
-    @ApiOperation(value = "Дизлайк поста", response = ResponseEntity.class)
-    @ApiResponse(code = 200, message = "Дизлайк поставлен")
     public ResponseEntity<ResultResponse> dislike(@RequestBody LikeAndDislikeRequest likeAndDislikeRequest){
         return ResponseEntity.ok(postServiceImpl.setLikeOrDislike(likeAndDislikeRequest.getPostId(), DISLIKE));
     }

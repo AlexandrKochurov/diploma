@@ -21,5 +21,4 @@ public class DefaultController {
     public String redirectToIndex() {
         return "forward:/"; //делаем перенаправление
     }
-
 }

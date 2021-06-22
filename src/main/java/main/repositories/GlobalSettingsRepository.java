@@ -1,6 +1,5 @@
 package main.repositories;
 
-import main.api.response.SettingsResponse;
 import main.model.GlobalSettings;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
