@@ -92,7 +92,6 @@ public class GeneralServiceImpl implements GeneralService {
 
     @Override
     public TagResponse tagsList(String query) {
-        List<TagDTO> list = getTagDTOs(tagRepository.tagsByWeight(query));
         return new TagResponse(getTagDTOs(tagRepository.tagsByWeight(query)));
     }
 
