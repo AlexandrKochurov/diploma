@@ -12,6 +12,7 @@ import main.model.*;
 import main.repositories.PostVoteRepository;
 import main.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,7 +35,11 @@ public class PostServiceImpl implements PostService {
     private final UserRepository userRepository;
     private final String NOTAUTHUSER = "anonymousUser";
 
-    private final int ANNOUNCE_LENGTH = 50;
+    @Value("${blog.minTextLength}")
+    private int minTextLength;
+
+    @Value("${blog.minTitleLength}")
+    private int minTitleLength;
 
     @Autowired
     public PostServiceImpl(PostRepository postRepository, PostVoteRepository postVoteRepository, UserRepository userRepository) {
@@ -217,11 +222,11 @@ public class PostServiceImpl implements PostService {
     private Map<String, String> addOrChangePost(Post post, AddOrEditPostRequest addOrEditPostRequest) {
         User user = userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
         Map<String, String> errors = new HashMap<>();
-        if (addOrEditPostRequest.getTitle().isBlank() || addOrEditPostRequest.getTitle().length() < 3) {
-            errors.put("title", "Заголовок пустой или слишком короткий, минимум 3 символа");
+        if (addOrEditPostRequest.getTitle().isBlank() || addOrEditPostRequest.getTitle().length() < minTitleLength) {
+            errors.put("title", "Заголовок пустой или слишком короткий, минимум " + minTitleLength + " символа");
         }
-        if (addOrEditPostRequest.getText().isBlank() || addOrEditPostRequest.getText().length() < 50) {
-            errors.put("text", "Текст поста пустой или слишком короткий, минимум 50 символов");
+        if (addOrEditPostRequest.getText().isBlank() || addOrEditPostRequest.getText().length() < minTextLength) {
+            errors.put("text", "Текст поста пустой или слишком короткий, минимум " + minTextLength + " символов");
         }
         if (errors.isEmpty()) {
             post.setIsActive(addOrEditPostRequest.getActive());
@@ -272,7 +277,7 @@ public class PostServiceImpl implements PostService {
                         post.getId(),
                         post.getInstant().getEpochSecond(),
                         post.getTitle(),
-                        post.getText().substring(0, Math.min(post.getText().length(), ANNOUNCE_LENGTH)).replaceAll("\\<.*?>", ""),
+                        post.getText().substring(0, Math.min(post.getText().length(), minTextLength)).replaceAll("\\<.*?>", ""),
                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == 1).count()),
                         (int) (post.getPostVoteList().stream().filter(postVote -> postVote.getValue() == -1).count()),
                         post.getPostCommentsList().size(),
